@@ -6,16 +6,17 @@ df <- st_read(file.path(data_dir, "RDHBSurveillance_05062024.csv"),
               options = c("GEOM_POSSIBLE_NAMES=Spatial"),
               crs = 4326)
 
-# remove empty geometries and define date/time, select only the useful columns
+# remove empty geometries and define date/time, presence/absence, select only the useful columns
 df <- df %>%
   rename(geometry = Spatial) %>%
   filter(!st_is_empty(geometry)) %>%
-  mutate(date_time = dmy_hm(dateOfActivity, tz = "Australia/Perth"),
+  mutate(date_time = dmy_hm(dateOfActivity, tz = "Australia/Perth"), # date/time/hour
          hour = hour(date_time)) %>%
-  select(ID, Title, date_time, Notes, HostLookup, SpeciesCount, # only take columns we need
+  mutate(pres = ifelse(grepl("Red", SpeciesObservedInFieldTXT), 1, 0)) %>% # present/absent data
+  select(ID, Title, date_time, hour, pres, Notes, HostLookup, SpeciesCount, # only take columns we need
            HostOther, HostFlowering, CaseLink, SmallGridID, SurveillanceActivity, 
            ColonyNumber, CaseTXT,
-           SpeciesActivity, SpeciesObserved, 
+           SpeciesActivity, 
            SmallGridID.ID, 
            DistanceFromRoad_meters, SlopeOrientation, 
            DistanceFromKnownForage_meters, AltitudeInMeters, 
