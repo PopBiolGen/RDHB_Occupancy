@@ -8,20 +8,34 @@ df <- st_read(file.path(data_dir, "RDHBSurveillance_05062024.csv"),
 
 # remove empty geometries and define date/time
 df <- df %>%
-  filter(!st_is_empty(Spatial)) %>%
+  rename(geometry = Spatial) %>%
+  filter(!st_is_empty(geometry)) %>%
   mutate(date_time = dmy_hm(dateOfActivity, tz = "Australia/Perth"),
          hour = hour(date_time)) %>%
-  select(-dateOfActivity) %>%
-  filter(year(date_time) != 2005) #remove data entry error
+  select(ID, Title, date_time, Notes, HostLookup, SpeciesCount, # only take columns we need
+           HostOther, HostFlowering, CaseLink, SmallGridID, SurveillanceActivity, 
+           ColonyNumber, CaseTXT,
+           SpeciesActivity, SpeciesObserved, 
+           SmallGridID.ID, 
+           DistanceFromRoad_meters, SlopeOrientation, 
+           DistanceFromKnownForage_meters, AltitudeInMeters, 
+           geometry)
   
 # identify first point in the remaining geometries
-first_points <- st_sfc(lapply(df$Spatial, extract_first_point))
+first_points <- st_sfc(lapply(df$geometry, extract_first_point))
 
 # replace the complex multipoint geometry collections with a single point
-df$Spatial <- first_points
+df$geometry <- first_points
 
 # trim down to only data where we have a point record
-df <- subset(df,!st_is_empty(df$Spatial))
+df <- subset(df,!st_is_empty(df$geometry))
+
+# filter out spatial / temporal outliers (data entry or other issues?)
+df <- df %>%
+  filter(year(date_time) != 2005) %>% #remove surprising year
+  mutate(lat = unlist(lapply(geometry,function(x){x[2]})), # extract lat and long for ease of access
+         long = unlist(lapply(geometry,function(x){x[1]}))) %>%
+  filter(lat > -20.8) # remove surprising points a long way south
 
 # make a grid and spatial join to point data 
 df_grid <- spatial_aggregation(df)

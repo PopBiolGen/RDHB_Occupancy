@@ -34,7 +34,7 @@ extract_first_point <- function(geometry) {
 # makes a grid and spatial joins
 spatial_aggregation <- function(sf.df, cell.size = 0.1){
   grid <- st_make_grid(sf.df, cellsize = cell.size, square = TRUE) # make a grid polygon using bbox of sf.df
-  sf_grid <- st_sf(geometry = st_sfc(grid)) # Convert grid to sf dataframe object
+  sf_grid <- st_sf(geometry = st_sfc(grid), cell.id = 1:length(grid)) # Convert grid to sf dataframe object and give id numbers
   # spatial join
   grid_d <- st_join(sf_grid, sf.df, join = st_intersects)
   grid_d
