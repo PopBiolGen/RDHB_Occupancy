@@ -6,7 +6,7 @@ df <- st_read(file.path(data_dir, "RDHBSurveillance_05062024.csv"),
               options = c("GEOM_POSSIBLE_NAMES=Spatial"),
               crs = 4326)
 
-# remove empty geometries and define date/time
+# remove empty geometries and define date/time, select only the useful columns
 df <- df %>%
   rename(geometry = Spatial) %>%
   filter(!st_is_empty(geometry)) %>%
@@ -26,6 +26,7 @@ first_points <- st_sfc(lapply(df$geometry, extract_first_point))
 
 # replace the complex multipoint geometry collections with a single point
 df$geometry <- first_points
+rm(first_points)
 
 # trim down to only data where we have a point record
 df <- subset(df,!st_is_empty(df$geometry))
