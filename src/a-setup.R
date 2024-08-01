@@ -28,16 +28,28 @@ extract_first_point <- function(geometry) {
   return(st_point())  # Return an empty point if no point found
 }
 
+# To find neighbours for each cell
+find_neighbours <- function(cell, grid) {
+  neighbours <- st_touches(cell, grid, sparse = FALSE)
+  neighbour_ids <- which(neighbours)
+  return(neighbour_ids)
+}
 
 # To undertake spatial aggregation
 # takes sf dataframe of point data
 # makes a grid and spatial joins
+# identifies neighbours for each grid cell
 spatial_aggregation <- function(sf.df, cell.size = 0.1){
-  grid <- st_make_grid(sf.df, cellsize = cell.size, square = TRUE) # make a grid polygon using bbox of sf.df
-  sf_grid <- st_sf(geometry = st_sfc(grid), cell.id = 1:length(grid)) # Convert grid to sf dataframe object and give id numbers
+  # make a grid polygon using bbox of sf.df
+  grid <- st_make_grid(sf.df, cellsize = cell.size, square = TRUE) 
+  # Convert grid to sf dataframe object and give id numbers
+  sf_grid <- st_sf(geometry = st_sfc(grid), cell.id = 1:length(grid)) 
+  # find neighbours for each cell
+  sf_grid$neighbours <- lapply(1:nrow(sf_grid), function(i) {
+    find_neighbours(sf_grid[i, ], grid)
+  })
   # spatial join
   grid_d <- st_join(sf_grid, sf.df, join = st_intersects)
-  grid_d
 }
 
 # To undertake temporal aggregation
