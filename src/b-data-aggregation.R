@@ -1,7 +1,7 @@
 # read in setup stuff
 source("src/a-setup.R")
 
-# get survey data (contains opints, polylines and polygons)
+# get survey data (contains points, polylines and polygons)
 df <- st_read(file.path(data_dir, "RDHBSurveillance_05062024.csv"), 
               options = c("GEOM_POSSIBLE_NAMES=Spatial"),
               crs = 4326)
@@ -18,3 +18,6 @@ df$Spatial <- first_points
 
 # trim down to only data where we have a point record
 df <- subset(df,!st_is_empty(df$Spatial))
+
+# make a grid and spatial join to point data 
+df_grid <- spatial_aggregation(df)
