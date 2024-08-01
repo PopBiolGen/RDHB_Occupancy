@@ -1,6 +1,6 @@
 # A file containing useful bits and pieces that are used by all downstream scripts
 library(dplyr)
-library(purrr)
+library(lubridate)
 library(sf)
 
 # Define local directory containing data files
@@ -11,7 +11,7 @@ data_dir <- file.path(Sys.getenv("DATA_PATH"), "RDHB")
 
 ##### Custom functions #####
 
-# Function to extract the first point from a geometry
+# To extract the first point from a geometry
 # Used here to simplify the mess of geometries in the dataset to just the first POINT in each geometry
 extract_first_point <- function(geometry) {
   if (inherits(geometry, "sfc_GEOMETRYCOLLECTION") || inherits(geometry, "GEOMETRYCOLLECTION")) {
@@ -29,7 +29,7 @@ extract_first_point <- function(geometry) {
 }
 
 
-# Function to undertake spatial aggregations
+# To undertake spatial aggregation
 # takes sf dataframe of point data
 # makes a grid and spatial joins
 spatial_aggregation <- function(sf.df, cell.size = 0.1){
@@ -38,4 +38,12 @@ spatial_aggregation <- function(sf.df, cell.size = 0.1){
   # spatial join
   grid_d <- st_join(sf_grid, sf.df, join = st_intersects)
   grid_d
+}
+
+# To undertake temporal aggregation
+# take sf points dataframe
+temporal_aggregation <- function(sf.df, n.chunks = 6){
+  sf.df <- sf.df %>%
+    mutate(time.step = as.numeric(cut(date_time, breaks = n.chunks)))
+  sf.df
 }
