@@ -27,6 +27,7 @@ first_points <- st_sfc(lapply(df$geometry, extract_first_point))
 
 # replace the complex multipoint geometry collections with a single point
 df$geometry <- first_points
+st_crs(df) <- 4326
 rm(first_points)
 
 # trim down to only data where we have a point record
@@ -38,6 +39,15 @@ df <- df %>%
   mutate(lat = unlist(lapply(geometry,function(x){x[2]})), # extract lat and long for ease of access
          long = unlist(lapply(geometry,function(x){x[1]}))) %>%
   filter(lat > -20.8) # remove surprising points a long way south
+
+# calculate location of earliest record and distance from there to all other records
+# we want distance in metres, so first cast to Australin Albers (CRS = 3577)
+df_albers <- select(df, geometry, pres, date_time) %>%
+              st_transform(crs = 3577)
+earliest_record <- filter(df_albers, pres==1) %>%
+                    filter(date_time == min(date_time))
+df$dist_0 <- as.numeric(st_distance(earliest_record, df_albers))
+rm(df_albers, earliest_record)
 
 # make a grid and spatial join to point data 
 df_grid <- spatial_aggregation(df)
