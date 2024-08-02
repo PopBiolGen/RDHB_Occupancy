@@ -17,7 +17,9 @@ df_t_x <- df_grid %>%
 # select data to use
 data_select <- select(df_t_x, cell.id, date.time, pres, hour, hour2, water, dist_0) %>%
               arrange(cell.id, date.time) %>%
+              group_by(cell.id) %>%
               mutate(date = paste0("obs_", row_number())) %>%
+              ungroup() %>%
               select(-date.time) 
 
 # make a site by time observation matrix

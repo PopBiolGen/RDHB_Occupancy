@@ -50,7 +50,7 @@ df$dist_0 <- as.numeric(st_distance(earliest_record, df_albers))
 rm(df_albers)
 
 # make a grid and spatial join to point data 
-df_grid <- spatial_aggregation(df)
+df_grid <- spatial_aggregation(df, cell.size = 0.04)
 
 # make time aggregations
 df_grid <- temporal_aggregation(df_grid)
