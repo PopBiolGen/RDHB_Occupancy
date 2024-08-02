@@ -2,6 +2,9 @@
 library(dplyr)
 library(lubridate)
 library(sf)
+library(leaflet)
+library(htmlwidgets)
+
 
 # Define local directory containing data files
 data_dir <- file.path(Sys.getenv("DATA_PATH"), "RDHB")
@@ -34,6 +37,44 @@ find_neighbours <- function(cell, grid) {
   neighbour_ids <- which(neighbours)
   return(neighbour_ids)
 }
+
+# To map points given points and grid_dataframe
+map_point_grid <- function(df, df_grid, summ.col = pres){
+  # make plots of the data and grid
+  plot_grid <- df_grid %>%
+    filter(!st_is_empty(geometry)) %>%
+    group_by(cell.id) %>%
+    summarise(summ = mean({{summ.col}}, na.rm = TRUE))
+  
+  map <- leaflet() %>%
+    addTiles() %>%
+    
+    ## Add detection points
+    addCircleMarkers(data = df[df$pres == 0, ], ~long, ~lat, radius = 3, color = "blue", fillColor = "blue", fillOpacity = 1, group = "Absent") %>%
+    addCircleMarkers(data = df[df$pres == 1, ], ~long, ~lat, radius = 3, color = "red", fillColor = "red", fillOpacity = 1, group = "Present") %>%
+    
+    
+    addPolygons(data = plot_grid,
+                color = "blue",          # Color of the polygon borders
+                weight = 2,              # Weight of the polygon borders
+                fillColor = "blue",      # Fill color of the polygons
+                fillOpacity = plot_grid$summ/max(plot_grid$summ),       # Opacity of the fill color
+                # fillOpacity = results_pol$prob,       # Opacity of the fill color - note too dark to be meaningful
+                label = ~cell.id,             # Labels for the polygons
+                group = "Summary")   %>%          
+    
+    addScaleBar(position = "bottomleft")%>%
+    fitBounds(116.72, -20.82, 116.76, -20.42)%>%  # Set the bounding box
+    
+    addLayersControl(
+      overlayGroups = c("Present", "Absent", 
+                        "Summary"),
+      options = layersControlOptions(collapsed = FALSE)) 
+  
+  map
+  
+}
+
 
 # To undertake spatial aggregation
 # takes sf dataframe of point data
