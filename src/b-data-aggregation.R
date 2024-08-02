@@ -52,5 +52,8 @@ rm(df_albers, earliest_record)
 # make a grid and spatial join to point data 
 df_grid <- spatial_aggregation(df)
 
+# remove grid cells with no records
+df_grid_data <- filter(df_grid, !is.na(ID))
+
 # make time aggregations
 df <- temporal_aggregation(df)
