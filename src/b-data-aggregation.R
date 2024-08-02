@@ -66,9 +66,11 @@ df_grid <- mutate(df_grid, time_0 = (date.time-earliest_record$date.time)/(60*60
                   food.water = ifelse(grepl(1, flowering, ignore.case = TRUE) | # food or water
                                          grepl(1, water, ignore.case = TRUE), 1, 0),
                   hive.removed = ifelse(grepl("Colony found", SurveillanceActivity, ignore.case = TRUE) | # hive removed?
-                                           grepl("Colony found", ActivityTXT, ignore.case = TRUE), 1, 0)) %>%
+                                           grepl("Colony found", ActivityTXT, ignore.case = TRUE), 1, 0),
+                  hour2 = hour^2) %>%
                   select(date.time, # grab useful stuff, ditch the rest
                          hour, 
+                         hour2,
                          cell.id, 
                          time.step, 
                          pres, 
