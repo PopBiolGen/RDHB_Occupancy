@@ -10,12 +10,12 @@ df <- st_read(file.path(data_dir, "RDHBSurveillance_05062024.csv"),
 df <- df %>%
   rename(geometry = Spatial) %>%
   filter(!st_is_empty(geometry)) %>%
-  mutate(date_time = dmy_hm(dateOfActivity, tz = "Australia/Perth"), # date/time/hour
-         hour = hour(date_time)) %>%
+  mutate(date.time = dmy_hm(dateOfActivity, tz = "Australia/Perth"), # date/time/hour
+         hour = hour(date.time)) %>%
   mutate(pres = ifelse(grepl("Red", SpeciesObservedInFieldTXT), 1, 0)) %>% # present/absent data
-  select(ID, Title, date_time, hour, pres, Notes, HostLookup, SpeciesCount, # only take columns we need
+  select(ID, Title, date.time, hour, pres, Notes, HostLookup, SpeciesCount, # only take columns we need
            HostOther, HostFlowering, CaseLink, SmallGridID, SurveillanceActivity, 
-           ColonyNumber, CaseTXT,
+           ActivityTXT, ColonyNumber, CaseTXT,
            SpeciesActivity, 
            SmallGridID.ID, 
            DistanceFromRoad_meters, SlopeOrientation, 
@@ -35,25 +35,52 @@ df <- subset(df,!st_is_empty(df$geometry))
 
 # filter out spatial / temporal outliers (data entry or other issues?)
 df <- df %>%
-  filter(year(date_time) != 2005) %>% #remove surprising year
+  filter(year(date.time) != 2005) %>% #remove surprising year
   mutate(lat = unlist(lapply(geometry,function(x){x[2]})), # extract lat and long for ease of access
          long = unlist(lapply(geometry,function(x){x[1]}))) %>%
   filter(lat > -20.8) # remove surprising points a long way south
 
 # calculate location of earliest record and distance from there to all other records
 # we want distance in metres, so first cast to Australin Albers (CRS = 3577)
-df_albers <- select(df, geometry, pres, date_time) %>%
+df_albers <- select(df, geometry, pres, date.time) %>%
               st_transform(crs = 3577)
 earliest_record <- filter(df_albers, pres==1) %>%
-                    filter(date_time == min(date_time))
+                    filter(date.time == min(date.time))
 df$dist_0 <- as.numeric(st_distance(earliest_record, df_albers))
-rm(df_albers, earliest_record)
+rm(df_albers)
 
 # make a grid and spatial join to point data 
 df_grid <- spatial_aggregation(df)
 
+# make time aggregations
+df_grid <- temporal_aggregation(df_grid)
+
 # remove grid cells with no records
 df_grid_data <- filter(df_grid, !is.na(ID))
 
-# make time aggregations
-df <- temporal_aggregation(df)
+# make other useful covariates
+df_grid <- mutate(df_grid, time_0 = (date.time-earliest_record$date.time)/(60*60*24), # time since incursion detected
+                  water = ifelse(grepl("water", Notes, ignore.case = TRUE) | # water around?
+                                            grepl("water", HostOther, ignore.case = TRUE), 1, 0),
+                  flowering = ifelse(HostFlowering %in% c("2;#Partially Flowering", "3;#Fully Flowering"), 1, 0), # flowering host?
+                  food.water = ifelse(grepl(1, flowering, ignore.case = TRUE) | # food or water
+                                         grepl(1, water, ignore.case = TRUE), 1, 0),
+                  hive.removed = ifelse(grepl("Colony found", SurveillanceActivity, ignore.case = TRUE) | # hive removed?
+                                           grepl("Colony found", ActivityTXT, ignore.case = TRUE), 1, 0)) %>%
+                  select(date.time, # grab useful stuff, ditch the rest
+                         hour, 
+                         cell.id, 
+                         time.step, 
+                         pres, 
+                         lat, 
+                         long, 
+                         dist_0, 
+                         time_0, 
+                         water, 
+                         flowering, 
+                         food.water,
+                         hive.removed,
+                         neighbours,
+                         geometry)
+
+

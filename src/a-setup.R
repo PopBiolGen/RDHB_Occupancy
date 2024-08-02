@@ -39,7 +39,7 @@ find_neighbours <- function(cell, grid) {
 # takes sf dataframe of point data
 # makes a grid and spatial joins
 # identifies neighbours for each grid cell
-spatial_aggregation <- function(sf.df, cell.size = 0.1){
+spatial_aggregation <- function(sf.df, cell.size = 0.05){
   # make a grid polygon using bbox of sf.df
   grid <- st_make_grid(sf.df, cellsize = cell.size, square = TRUE) 
   # Convert grid to sf dataframe object and give id numbers
@@ -56,6 +56,6 @@ spatial_aggregation <- function(sf.df, cell.size = 0.1){
 # take sf points dataframe
 temporal_aggregation <- function(sf.df, n.chunks = 6){
   sf.df <- sf.df %>%
-    mutate(time.step = as.numeric(cut(date_time, breaks = n.chunks)))
+    mutate(time.step = as.numeric(cut(date.time, breaks = n.chunks)))
   sf.df
 }
