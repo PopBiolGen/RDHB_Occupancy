@@ -86,3 +86,39 @@ df_grid <- mutate(df_grid, time_0 = (date.time-earliest_record$date.time)/(60*60
                          geometry)
 
 
+# make plots of the data and grid
+library(leaflet)
+library(htmlwidgets)
+
+plot_grid <- df_grid %>%
+            filter(!st_is_empty(geometry)) %>%
+            group_by(cell.id) %>%
+            summarise(prop.pres = mean(pres))
+plot_grid$prop.pres[is.na(plot_grid$prop.pres)] <- 0 
+
+map <- leaflet() %>%
+  addTiles() %>%
+  
+  ## Add detection points
+  addCircleMarkers(data = df[df$pres == 0, ], ~long, ~lat, radius = 3, color = "blue", fillColor = "blue", fillOpacity = 1, group = "Absent") %>%
+  addCircleMarkers(data = df[df$pres == 1, ], ~long, ~lat, radius = 3, color = "red", fillColor = "red", fillOpacity = 1, group = "Present") %>%
+  
+  
+  addPolygons(data = plot_grid,
+              color = "blue",          # Color of the polygon borders
+              weight = 2,              # Weight of the polygon borders
+              fillColor = "blue",      # Fill color of the polygons
+              fillOpacity = plot_grid$prop.pres*10,       # Opacity of the fill color
+              # fillOpacity = results_pol$prob,       # Opacity of the fill color - note too dark to be meaningful
+              label = ~cell.id,             # Labels for the polygons
+              group = "Prop_pos")   %>%          
+  
+  addScaleBar(position = "bottomleft")%>%
+  fitBounds(116.72, -20.82, 116.76, -20.42)%>%  # Set the bounding box
+  
+  addLayersControl(
+    overlayGroups = c("Present", "Absent", 
+                      "Prop_pos"),
+    options = layersControlOptions(collapsed = FALSE)) 
+
+map
