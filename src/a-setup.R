@@ -39,14 +39,18 @@ find_neighbours <- function(cell, grid) {
 }
 
 # Makes grid-level summary after spatial join of grid onto point-level data
-# returns grrd dataframe with one row per grid cell
+# returns grid dataframe with one row per grid cell
 make_grid_summary <- function(df){
   get_first <- function(x){x[1]}
   grid_summ <- df %>%
     group_by(cell.id) %>%
     summarise(mean.dist = mean(dist_0),
-              mean.prop = mean(pres),
-              neighbours = get_first(neighbours))
+              mean.prop = mean(pres))
+  # find neighbours for each cell
+  grid_summ$neighbours <- lapply(1:nrow(grid_summ), function(i) {
+    find_neighbours(grid_summ[i, ], grid_summ)
+  })
+  grid_summ
 }
 
 # To map points given points and grid_dataframe
@@ -96,12 +100,9 @@ spatial_aggregation <- function(sf.df, cell.size = 0.05){
   grid <- st_make_grid(sf.df, cellsize = cell.size, square = TRUE) 
   # Convert grid to sf dataframe object and give id numbers
   sf_grid <- st_sf(geometry = st_sfc(grid), cell.id = 1:length(grid)) 
-  # find neighbours for each cell
-  sf_grid$neighbours <- lapply(1:nrow(sf_grid), function(i) {
-    find_neighbours(sf_grid[i, ], grid)
-  })
   # spatial join
   grid_d <- st_join(sf_grid, sf.df, join = st_intersects)
+  grid_d
 }
 
 # To undertake temporal aggregation
