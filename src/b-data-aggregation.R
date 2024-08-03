@@ -50,7 +50,7 @@ df$dist_0 <- as.numeric(st_distance(earliest_record, df_albers))
 rm(df_albers)
 
 # make a grid and spatial join to point data 
-df_grid <- spatial_aggregation(df, cell.size = 0.005)
+df_grid <- spatial_aggregation(df)
 
 # place cell.id onto points data
 cells <- select(df_grid, ID, cell.id) %>% st_drop_geometry()

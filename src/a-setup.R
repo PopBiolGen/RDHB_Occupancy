@@ -95,7 +95,7 @@ map_point_grid <- function(df, df_grid, summ.col = mean.prop){
 # takes sf dataframe of point data
 # makes a grid and spatial joins
 # identifies neighbours for each grid cell
-spatial_aggregation <- function(sf.df, cell.size = 0.05){
+spatial_aggregation <- function(sf.df, cell.size = 0.005){
   # make a grid polygon using bbox of sf.df
   grid <- st_make_grid(sf.df, cellsize = cell.size, square = TRUE) 
   # Convert grid to sf dataframe object and give id numbers
