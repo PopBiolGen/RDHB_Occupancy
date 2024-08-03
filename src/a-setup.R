@@ -39,12 +39,12 @@ find_neighbours <- function(cell, grid) {
 }
 
 # To map points given points and grid_dataframe
-map_point_grid <- function(df, df_grid, summ.col = pres){
+map_point_grid <- function(df, df_grid, summ.col = mean.prop){
   # make plots of the data and grid
   plot_grid <- df_grid %>%
     filter(!st_is_empty(geometry)) %>%
-    group_by(cell.id) %>%
-    summarise(summ = mean({{summ.col}}, na.rm = TRUE))
+    mutate(plot.col = ifelse(is.na({{summ.col}}), 0, {{summ.col}})) %>%
+    mutate(plot.col = plot.col/max(plot.col))
   
   map <- leaflet() %>%
     addTiles() %>%
@@ -58,7 +58,7 @@ map_point_grid <- function(df, df_grid, summ.col = pres){
                 color = "blue",          # Color of the polygon borders
                 weight = 2,              # Weight of the polygon borders
                 fillColor = "blue",      # Fill color of the polygons
-                fillOpacity = plot_grid$summ/max(plot_grid$summ),       # Opacity of the fill color
+                fillOpacity = plot_grid$plot.col,       # Opacity of the fill color
                 # fillOpacity = results_pol$prob,       # Opacity of the fill color - note too dark to be meaningful
                 label = ~cell.id,             # Labels for the polygons
                 group = "Summary")   %>%          
