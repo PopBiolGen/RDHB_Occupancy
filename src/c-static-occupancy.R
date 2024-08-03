@@ -17,11 +17,12 @@ df_t_x <- df %>%
 z <- map_point_grid(df_tx, df_grid_t_x, summ.col = pres)
 z
 
-df_grid_t_x <- filter(df_grid_t_x, !st_is_empty(geometry)) %>%
-               st_drop_geometry()
+# remove empty grid cells and drop geometry
+#df_grid_t_x <- filter(df_grid_t_x, !st_is_empty(geometry)) %>%
+#               st_drop_geometry()
           
-df_t_x <- filter(df_t_x, !st_is_empty(geometry)) %>%
-          st_drop_geometry()
+#df_t_x <- filter(df_t_x, !st_is_empty(geometry)) %>%
+#          st_drop_geometry()
           
 
 
@@ -40,13 +41,20 @@ obs_matrix <- data_select %>%
               select(cell.id, date, pres) %>%
               tidyr::pivot_wider(names_from = date, values_from = pres) %>%
               select(-cell.id) %>%
+              st_drop_geometry() %>%
               as.matrix()
 
 # make a site by n_covriates dataframe
 site_covs <- data_select %>%
-              select(cell.id, dist_0) %>% # site covariates
+              select(cell.id, dist_0, pres) %>% # site covariates
               group_by(cell.id) %>%
-              summarise(mean.dist = mean(dist_0, na.rm = TRUE)) %>%
+              summarise(mean.dist = mean(dist_0, na.rm = TRUE),
+                        mean.prop = mean(pres, na.rm = TRUE)) 
+# append a distance from grid cell with highest prevalence
+max_prevalence <- filter(site_covs, mean.prop == max(mean.prop))
+site_covs$dist_prev <- st_distance(site_covs, max_prevalence) 
+
+site_covs <- st_drop_geometry(site_covs) %>%
               as.data.frame()
 
 # make observation-level covariate list
@@ -65,6 +73,7 @@ make_obs_covs_list <- function(df, cov.names = c("hour", "hour2", "water")){
 }
 
 obs_covs <- data_select %>%
+            st_drop_geometry() %>%
             select(cell.id, date, hour, hour2, water) %>%
             make_obs_covs_list()
 

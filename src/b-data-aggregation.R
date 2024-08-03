@@ -41,7 +41,7 @@ df <- df %>%
   filter(lat > -20.7) # remove surprising points a long way south
 
 # calculate location of earliest record and distance from there to all other records
-# we want distance in metres, so first cast to Australin Albers (CRS = 3577)
+# we want distance in metres, so first cast to Australian Albers (CRS = 3577)
 df_albers <- select(df, geometry, pres, date.time) %>%
               st_transform(crs = 3577)
 earliest_record <- filter(df_albers, pres==1) %>%
@@ -52,15 +52,26 @@ rm(df_albers)
 # make a grid and spatial join to point data 
 df_grid <- spatial_aggregation(df, cell.size = 0.005)
 
+# place cell.id onto points data
+cells <- select(df_grid, ID, cell.id) %>% st_drop_geometry()
+df <- left_join(df, cells)
+
+# make grid summaries
+get_first <- function(x){x[1]}
+df_grid <- df_grid %>%
+            group_by(cell.id) %>%
+            summarise(mean.dist = mean(dist_0),
+                      mean.prop = mean(pres),
+                      neighbours = get_first(neighbours))
+
 # make time aggregations
-df_grid <- temporal_aggregation(df_grid)
 df <- temporal_aggregation(df)
 
 # remove grid cells with no records
-df_grid_data <- filter(df_grid, !is.na(ID))
+df_grid_data <- filter(df_grid, !st_is_empty(geometry))
 
 # make other useful covariates
-df_grid <- mutate(df_grid, time_0 = (date.time-earliest_record$date.time)/(60*60*24), # time since incursion detected
+df <- mutate(df, time_0 = (date.time-earliest_record$date.time)/(60*60*24), # time since incursion detected
                   water = ifelse(grepl("water", Notes, ignore.case = TRUE) | # water around?
                                             grepl("water", HostOther, ignore.case = TRUE), 1, 0),
                   flowering = ifelse(HostFlowering %in% c("2;#Partially Flowering", "3;#Fully Flowering"), 1, 0), # flowering host?
@@ -83,7 +94,6 @@ df_grid <- mutate(df_grid, time_0 = (date.time-earliest_record$date.time)/(60*60
                          flowering, 
                          food.water,
                          hive.removed,
-                         neighbours,
                          geometry)
 
 
