@@ -38,6 +38,17 @@ find_neighbours <- function(cell, grid) {
   return(neighbour_ids)
 }
 
+# Makes grid-level summary after spatial join of grid onto point-level data
+# returns grrd dataframe with one row per grid cell
+make_grid_summary <- function(df){
+  get_first <- function(x){x[1]}
+  grid_summ <- df %>%
+    group_by(cell.id) %>%
+    summarise(mean.dist = mean(dist_0),
+              mean.prop = mean(pres),
+              neighbours = get_first(neighbours))
+}
+
 # To map points given points and grid_dataframe
 map_point_grid <- function(df, df_grid, summ.col = mean.prop){
   # make plots of the data and grid

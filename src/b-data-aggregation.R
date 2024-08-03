@@ -57,12 +57,7 @@ cells <- select(df_grid, ID, cell.id) %>% st_drop_geometry()
 df <- left_join(df, cells)
 
 # make grid summaries
-get_first <- function(x){x[1]}
-df_grid <- df_grid %>%
-            group_by(cell.id) %>%
-            summarise(mean.dist = mean(dist_0),
-                      mean.prop = mean(pres),
-                      neighbours = get_first(neighbours))
+df_grid <- make_grid_summary(df_grid)
 
 # make time aggregations
 df <- temporal_aggregation(df)
