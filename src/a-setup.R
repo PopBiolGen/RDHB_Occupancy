@@ -14,6 +14,22 @@ data_dir <- file.path(Sys.getenv("DATA_PATH"), "RDHB")
 
 ##### Custom functions #####
 
+# To aggregate data in space and time
+aggregate_data <- function(df, cell.size = 0.005, n.periods = 6){
+  # make a grid and spatial join to point data 
+  df_grid <- spatial_aggregation(df, cell.size)
+  # place cell.id onto points data
+  cells <- select(df_grid, ID, cell.id) %>% st_drop_geometry()
+  df <- left_join(df, cells)
+  # make grid summaries
+  df_grid <- make_grid_summary(df_grid)
+  # make time aggregations
+  if (!("time.step" %in% names(df))){
+    df <- temporal_aggregation(df, n.periods = n.periods)  
+  }
+  return(list(df = df, df_grid = df_grid))
+}
+
 # To extract the first point from a geometry
 # Used here to simplify the mess of geometries in the dataset to just the first POINT in each geometry
 extract_first_point <- function(geometry) {
@@ -45,7 +61,8 @@ make_grid_summary <- function(df){
   grid_summ <- df %>%
     group_by(cell.id) %>%
     summarise(mean.dist = mean(dist_0),
-              mean.prop = mean(pres))
+              mean.prop = mean(pres),
+              n.hive.removed = sum(hive.removed))
   # find neighbours for each cell
   grid_summ$neighbours <- lapply(1:nrow(grid_summ), function(i) {
     find_neighbours(grid_summ[i, ], grid_summ)
@@ -95,7 +112,7 @@ map_point_grid <- function(df, df_grid, summ.col = mean.prop){
 # takes sf dataframe of point data
 # makes a grid and spatial joins
 # identifies neighbours for each grid cell
-spatial_aggregation <- function(sf.df, cell.size = 0.005){
+spatial_aggregation <- function(sf.df, cell.size){
   # make a grid polygon using bbox of sf.df
   grid <- st_make_grid(sf.df, cellsize = cell.size, square = TRUE) 
   # Convert grid to sf dataframe object and give id numbers
@@ -107,8 +124,8 @@ spatial_aggregation <- function(sf.df, cell.size = 0.005){
 
 # To undertake temporal aggregation
 # take sf points dataframe
-temporal_aggregation <- function(sf.df, n.chunks = 6){
+temporal_aggregation <- function(sf.df, n.periods){
   sf.df <- sf.df %>%
-    mutate(time.step = as.numeric(cut(date.time, breaks = n.chunks)))
+    mutate(time.step = as.numeric(cut(date.time, breaks = n.periods)))
   sf.df
 }

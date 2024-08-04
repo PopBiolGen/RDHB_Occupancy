@@ -1,18 +1,19 @@
 # script to run static occupancy model on RDHB data
 
 # Get the data
-source("src/b-data-aggregation.R")
+source("src/b-data-organisation.R")
 
 # additional libraries required
 library(unmarked)
 
 # choose only the latest time interval to assume a static occupancy, drop unsampled grid cells, drop geometry
-df_t_x <- df %>%
-          filter(time.step == max(time.step, na.rm = TRUE))
-df_grid_t_x <- make_grid_summary(spatial_aggregation(select(df_t_x, -cell.id)))
+agg_data <- df %>% temporal_aggregation( n.periods = 6) %>%
+          filter(time.step == max(time.step, na.rm = TRUE)) %>%
+          aggregate_data()
+
 
 # make a map
-z <- map_point_grid(df_t_x, df_grid_t_x, summ.col = mean.prop)
+z <- map_point_grid(agg_data$df, agg_data$df_grid, summ.col = mean.prop)
 z
 
 # remove empty grid cells and drop geometry
@@ -42,12 +43,13 @@ obs_matrix <- data_select %>%
               st_drop_geometry() %>%
               as.matrix()
 
-# make a site by n_covriates dataframe
+# make a site by n_covariates dataframe
 site_covs <- data_select %>%
-              select(cell.id, dist_0, pres) %>% # site covariates
+              select(cell.id, dist_0, pres, hive.removed) %>% # site covariates
               group_by(cell.id) %>%
               summarise(mean.dist = mean(dist_0, na.rm = TRUE),
-                        mean.prop = mean(pres, na.rm = TRUE)) 
+                        mean.prop = mean(pres, na.rm = TRUE),
+                        n.hive.removed = sum(hive.removed)) 
 # append a distance from grid cell with highest prevalence
 #max_prevalence <- filter(site_covs, mean.prop == max(mean.prop))
 #site_covs$dist_prev <- st_distance(site_covs, max_prevalence) 
