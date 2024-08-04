@@ -17,18 +17,13 @@ z <- map_point_grid(agg_data$df, agg_data$df_grid, summ.col = mean.prop)
 z
 
 # remove empty grid cells and drop geometry
-df_grid_t_x <- filter(df_grid_t_x, !st_is_empty(geometry)) %>%
-               st_drop_geometry()
-          
-df_t_x <- filter(df_t_x, !st_is_empty(geometry)) %>%
-          st_drop_geometry()
-          
-
+agg_data <- lapply(agg_data, filter, !st_is_empty(geometry))
+agg_data <- lapply(agg_data, st_drop_geometry)
 
 
 ##### make occu inputs ####
 # select data to use
-data_select <- select(df_t_x, cell.id, date.time, pres, hour, hour2, water, dist_0) %>%
+data_select <- select(agg_data$df, cell.id, date.time, pres, hour, hour2, water, dist_0, hive.removed) %>%
               arrange(cell.id, date.time) %>%
               group_by(cell.id) %>%
               mutate(date = paste0("obs_", row_number())) %>%
@@ -49,7 +44,8 @@ site_covs <- data_select %>%
               group_by(cell.id) %>%
               summarise(mean.dist = mean(dist_0, na.rm = TRUE),
                         mean.prop = mean(pres, na.rm = TRUE),
-                        n.hive.removed = sum(hive.removed)) 
+                        n.hive.removed = sum(hive.removed),
+                        mean.dist2 = mean.dist^2) 
 # append a distance from grid cell with highest prevalence
 #max_prevalence <- filter(site_covs, mean.prop == max(mean.prop))
 #site_covs$dist_prev <- st_distance(site_covs, max_prevalence) 
