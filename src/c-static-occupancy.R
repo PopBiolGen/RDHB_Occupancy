@@ -6,18 +6,17 @@ source("src/b-data-organisation.R")
 # additional libraries required
 library(unmarked)
 
-# choose only the latest time interval to assume a static occupancy, drop unsampled grid cells, drop geometry
+# choose only the latest time interval to assume a static occupancy, drop unsampled grid cells
 agg_data <- df %>% temporal_aggregation( n.periods = 6) %>%
           filter(time.step == max(time.step, na.rm = TRUE)) %>%
           aggregate_data()
-
+agg_data$df_grid <- filter(agg_data$df_grid, !is.na(mean.prop)) 
 
 # make a map
 z <- map_point_grid(agg_data$df, agg_data$df_grid, summ.col = mean.prop)
 z
 
 # remove empty grid cells and drop geometry
-agg_data <- lapply(agg_data, filter, !st_is_empty(geometry))
 agg_data <- lapply(agg_data, st_drop_geometry)
 
 
