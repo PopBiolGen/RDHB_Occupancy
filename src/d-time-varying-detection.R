@@ -15,17 +15,13 @@ n.seasons <- 6 # number of "seasons" to break the data into
 agg_data <- df %>% aggregate_data(n.periods = n.seasons)
 agg_data$df_grid <- filter(agg_data$df_grid, !is.na(mean.prop)) 
 
-# make a map
-z <- map_point_grid(agg_data$df, agg_data$df_grid, summ.col = mean.prop)
-z
-
 # drop geometry
-agg_data <- lapply(agg_data, st_drop_geometry)
+agg_data.ng <- lapply(agg_data, st_drop_geometry)
 
 
 ##### make occu inputs ####
 # select data to use
-data_select <- select(agg_data$df, cell.id, time.step, date.time, pres, hour, hour2, water, dist_0, hive.removed) %>%
+data_select <- select(agg_data.ng$df, cell.id, time.step, date.time, pres, hour, hour2, water, dist_0, hive.removed) %>%
               mutate(time.step2 = time.step^2) %>% # this is a fudge compared to a proper 1st- or 2nd-order Fourier function; exploration
               arrange(cell.id, date.time) %>%
               group_by(cell.id) %>%
@@ -80,9 +76,9 @@ obs_covs <- data_select %>%
             make_obs_covs_list(cov.names = c("time.step", "time.step2", "hour", "hour2", "water"))
 
 # create an unmarked frame
-umf <- unmarkedFrameOccu(y = obs_matrix, siteCovs = site_covs, obsCovs = obs_covs)
+umf.tvd <- unmarkedFrameOccu(y = obs_matrix, siteCovs = site_covs, obsCovs = obs_covs)
 
 # fit a model
-fit <- occu(~ 1 + time.step + time.step2 + water + hour + hour2
+fit.tvd <- occu(~ 1 + time.step + time.step2 + water + hour + hour2
             ~ 1 + mean.dist, 
-            data = umf)
+            data = umf.tvd)
