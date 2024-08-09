@@ -3,7 +3,7 @@ library(dplyr)
 library(lubridate)
 library(sf)
 library(leaflet)
-library(htmlwidgets)
+library(ggplot2)
 
 
 # Define local directory containing data files
