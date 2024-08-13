@@ -2,9 +2,22 @@
 source("src/a-setup.R")
 
 # get survey data (contains points, polylines and polygons)
-df <- st_read(file.path(data_dir, "RDHBSurveillance_05062024.csv"), 
-              options = c("GEOM_POSSIBLE_NAMES=Spatial"),
-              crs = 4326)
+coltypes <- c("numeric", "numeric", "numeric", "text", 
+              "numeric", "numeric", "numeric", "numeric", "text", "numeric", "numeric", 
+              "numeric", "numeric", "numeric", "numeric", "date", "date", "text", 
+              "text", "numeric", "numeric", "numeric", "numeric", "numeric", 
+              "text", "text", "text", "text", "text", "numeric", "text", 
+              "numeric", "text", "text", "numeric", "numeric", "numeric", "text", 
+              "text", "numeric", "numeric", "numeric", "numeric", "text", "numeric", "text", "numeric", 
+              "text", "text", "text", "text", "text", "numeric", 
+              "numeric", "numeric", "text", "text", "text", "text", "text", "text", "text", 
+              "text", "text")
+
+df <- read_xlsx(path = file.path(data_dir, "RDHBSurveillance_2024-08-12.xlsx"), 
+                sheet = "Export",
+                col_types = coltypes)
+
+### to do, cast to sf ###
 
 # remove empty geometries and define date/time, presence/absence, select only the useful columns
 df <- df %>%

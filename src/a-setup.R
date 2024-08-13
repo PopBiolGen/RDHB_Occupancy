@@ -4,6 +4,7 @@ library(lubridate)
 library(sf)
 library(leaflet)
 library(ggplot2)
+library(readxl)
 
 
 # Define local directory containing data files
