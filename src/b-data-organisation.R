@@ -86,3 +86,4 @@ df <- mutate(df, time_0 = (date.time-earliest_record$date.time)/(60*60*24), # ti
          food.water,
          hive.removed,
          geometry)
+#Tamrika Testing if this gets through to Ben
