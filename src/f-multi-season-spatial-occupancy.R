@@ -148,10 +148,11 @@ ms.so.fit <- stPGOcc(occ.formula = ~1,
                      cov.model = "exponential", 
                      NNGP = TRUE, 
                      n.neighbors = 8, 
-                     n.batch = 20, 
-                     batch.length = 1000,
+                     n.batch = 40, 
+                     batch.length = 500,
                      ar1 = TRUE,
                      n.chains = 3)
 
 summary(ms.so.fit)
+save(ms.so.fit, file = "out/f-ms-so_fit.RData")
 fit.vals <- fitted(ms.so.fit)
