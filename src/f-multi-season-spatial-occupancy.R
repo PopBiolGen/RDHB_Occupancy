@@ -155,4 +155,3 @@ ms.so.fit <- stPGOcc(occ.formula = ~1,
 
 summary(ms.so.fit)
 save(ms.so.fit, file = "out/f-ms-so_fit.RData")
-fit.vals <- fitted(ms.so.fit)
