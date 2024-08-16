@@ -31,7 +31,7 @@ data_select <- select(agg_data.ng$df, cell.id, time.step, date.time, pres, water
 site_covs <- data_select %>%
   select(cell.id, dist_0, hive.removed) %>% # site covariates
   group_by(cell.id) %>%
-  summarise(mean.dist = mean(dist_0, na.rm = TRUE)/1000, # in kms
+  summarise(mean.dist = mean(dist_0, na.rm = TRUE), # in kms
             n.hive.removed = sum(hive.removed),
             n.records = n()) %>%
   ungroup() %>%

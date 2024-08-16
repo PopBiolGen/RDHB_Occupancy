@@ -59,7 +59,7 @@ df_albers <- select(df, geometry, pres, date.time) %>%
               st_transform(crs = 3577)
 earliest_record <- filter(df_albers, pres==1) %>%
                     filter(date.time == min(date.time))
-df$dist_0 <- as.numeric(st_distance(earliest_record, df_albers))
+df$dist_0 <- as.numeric(st_distance(earliest_record, df_albers))/1000 # in kms
 rm(df_albers)
 
 # make other useful covariates
