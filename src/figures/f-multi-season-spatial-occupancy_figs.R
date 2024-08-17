@@ -1,24 +1,25 @@
 # to visualise results from the multi-season-spatial-occupancy model
-# source("src/f-multi-season-spatial-occupancy.R")
+# If using an already fitted model..
 source("src/b-data-organisation.R")
 # aggregate data (time and space), drop unsampled grid cells
 n.times <- 10
 agg_data <- df %>% aggregate_data(n.periods = n.times)
 agg_data$df_grid <- filter(agg_data$df_grid, !is.na(mean.prop)) 
+load(file = "out/f-ms-so_fit.RData")
 
+# else
+# source("src/f-multi-season-spatial-occupancy.R")
 
 library(gganimate)
 library(spOccupancy)
 
-load(file = "out/f-ms-so_fit.RData")
 
-est.psi <- apply(ms.so.fit$psi.samples, c(2, 3), mean) # estimated occupancy at each time.step
-
+##### Make an animated map of occupancy over time #####
+# estimated occupancy at each site and time.step
+est.psi <- apply(ms.so.fit$psi.samples, c(2, 3), mean) 
 # join occupancy estimates onto grid
 grid.dat <- cbind(agg_data$df_grid, est.psi)
 
-
-##### Make an animated map of occupancy over time #####
 gd.long <- grid.dat %>%
   tidyr::pivot_longer(cols = starts_with("X"), names_to = "time.step", values_to = "Occupancy") %>%
   mutate(time.step = as.numeric(gsub("X", "", time.step)))
@@ -72,3 +73,50 @@ p <- ggplot() +
   theme_minimal()
 p
 ggsave(filename = "out/multi-season-spatial-occupancy-mean-occ-over-time.pdf")
+
+
+##### Look at how detection changes throughout the year
+doy <- 1:365
+doy.rad <- doy/365*2*pi
+ 
+# function to return predictions for each day of year given posterior sample of parameters
+det.pred.fun <- function(samp.vec, water = 0){
+  pred <- samp.vec["(Intercept)"] + water*samp.vec["water"] + sin(doy.rad)*samp.vec["sin.doy"] + cos(doy.rad)*samp.vec["cos.doy"]
+  plogis(pred) # back onto the probability scale
+}
+
+# without water
+det.fun.samps <- matrix(ncol = length(doy), nrow = nrow(ms.so.fit$alpha.samples))
+for (ss in 1:nrow(ms.so.fit$alpha.samples)){
+  det.fun.samps[ss,] <- det.pred.fun(ms.so.fit$alpha.samples[ss,])
+}
+det.fun.mean <- apply(det.fun.samps, 2, mean)
+det.fun.sd <- apply(det.fun.samps, 2, sd)
+
+# with water
+det.fun.samps <- matrix(ncol = length(doy), nrow = nrow(ms.so.fit$alpha.samples))
+for (ss in 1:nrow(ms.so.fit$alpha.samples)){
+  det.fun.samps[ss,] <- det.pred.fun(ms.so.fit$alpha.samples[ss,], water = 1)
+}
+det.fun.mean.water <- apply(det.fun.samps, 2, mean)
+det.fun.water.sd <- apply(det.fun.samps, 2, sd)
+
+p <- ggplot() +
+  geom_errorbar(aes(x = doy, 
+                    ymin = det.fun.mean-2*det.fun.sd,
+                    ymax = det.fun.mean+2*det.fun.sd),
+                width = 0,
+                col = "lightgrey") +
+  geom_line(aes(x = doy, y = det.fun.mean, col = "No water")) +
+  geom_errorbar(aes(x = doy, 
+                    ymin = det.fun.mean.water-2*det.fun.water.sd,
+                    ymax = det.fun.mean.water+2*det.fun.water.sd),
+                width = 0,
+                col = "lightgrey") +
+  geom_line(aes(x = doy, y = det.fun.mean.water, col = "Water")) +
+  labs(x = "Day of year", y = "Detection probability") +
+  scale_fill_manual('Legend Title', values=c('Water', 'No water')) +
+  ylim(0, 0.4) +
+  theme_minimal()
+p
+ggsave(filename = "out/multi-season-spatial-occupancy-detection-over-time.pdf")
