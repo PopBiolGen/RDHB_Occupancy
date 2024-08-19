@@ -55,7 +55,7 @@ p <- ggplot() +
   labs(title = paste0("Time step: ", max(gd.long$time.step)))
 
 p
-ggsave(filename = "out/multi-season-spatial-occupancy.pdf")
+ggsave(filename = "out/multi-season-spatial-occupancy.png")
 
 
 ##### Examine how occupancy changes over time #####
@@ -72,10 +72,10 @@ p <- ggplot() +
   ylim(0, 0.3) +
   theme_minimal()
 p
-ggsave(filename = "out/multi-season-spatial-occupancy-mean-occ-over-time.pdf")
+ggsave(filename = "out/multi-season-spatial-occupancy-mean-occ-over-time.png")
 
 
-##### Look at how detection changes throughout the year
+##### Look at how detection changes throughout the year #####
 doy <- 1:365
 doy.rad <- doy/365*2*pi
  
@@ -119,4 +119,27 @@ p <- ggplot() +
   ylim(0, 0.4) +
   theme_minimal()
 p
-ggsave(filename = "out/multi-season-spatial-occupancy-detection-over-time.pdf")
+ggsave(filename = "out/multi-season-spatial-occupancy-detection-over-time.png")
+
+rm(det.fun.samps, det.fun.mean, det.fun.mean.water, det.fun.sd, det.fun.water.sd)
+
+##### Look at how correlation in occupancy changes with distance #####
+x <- seq(0, 10000, 10) # vector of distances, in km
+cor.fun.samps <- matrix(ncol = length(x), nrow = nrow(ms.so.fit$theta.samples))
+for (ss in 1:nrow(ms.so.fit$theta.samples)){
+  cor.fun.samps[ss,] <- exp(-ms.so.fit$theta.samples[ss, "phi"]*x)
+}
+cor.fun.mean <- apply(cor.fun.samps, 2, mean)
+cor.fun.sd <- apply(cor.fun.samps, 2, sd)
+
+p <- ggplot() +
+  geom_errorbar(aes(x = x, 
+                    ymin = cor.fun.mean-2*cor.fun.sd,
+                    ymax = cor.fun.mean+2*cor.fun.sd),
+                width = 0,
+                col = "lightgrey") +
+  geom_line(aes(x = x, y = cor.fun.mean)) +
+  labs(x = "Distance (m)", y = "Correlation between sites") +
+  theme_minimal()
+p
+ggsave(filename = "out/multi-season-spatial-occupancy-correlation-over-distance.png")
