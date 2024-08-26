@@ -32,26 +32,24 @@ mean.occ <- function(occ, k, dm){
   ld
 }
 
-# change occupancy state according to parameters
-update.occ.state <- function(state, dm, ext.vars, col.vars, pars){
-  col.vars <- cbind(col.vars, mean.occ(state, pars$k, dm)) # get weighted occupancy
+# change occupancy probability according to parameters
+update.occ.prob <- function(occ.prob, dm, ext.vars, col.vars, pars){
+  col.vars <- cbind(col.vars, mean.occ(occ.prob, pars$k, dm)) # get weighted occupancy
   if (nrow(pars$col.b) != ncol(col.vars)) stop("Dimension mismatch between variables and parameters")
   if (nrow(pars$ext.b) != ncol(ext.vars)) stop("Dimension mismatch between variables and parameters")
   pred.col <- col.vars %*% pars$col.b # predictor of log-odds of colonisation
   pred.ext <- ext.vars %*% pars$ext.b # predictor of log-odds of extinction
-  colonised <- bernoulli(prob = plogis(pred.col), dim = length(pred.col)) # colonised? define as random draw from a binomial
-  extirpated <- bernoulli(prob = plogis(pred.ext), dim = length(pred.ext)) # extirpated? define as random draw from a binomial
-  (1-state)*colonised - state*extirpated # updated state
+  (1-occ.prob)*ilogit(pred.col) + occ.prob*(1-ilogit(pred.ext)) # marginalised occupancy probability
 }
 
 # run over t time steps
-dyn.occ <- function(init.state, nsteps, dm, ext.vars, col.vars, pars){
-  occ.state <- greta_array(dim = c(nrow(ext.vars), nsteps + 1))
-  occ.state[, 1] <- init.state
+dyn.occ <- function(init.prob, nsteps, dm, ext.vars, col.vars, pars){
+  occ.prob <- greta_array(dim = c(nrow(ext.vars), nsteps + 1))
+  occ.prob[, 1] <- init.prob
   for (tt in 1:nsteps){
-    occ.state[,tt+1] <- update.occ.state(state = occ.state[,tt], dm, ext.vars, col.vars, pars)
+    occ.prob[,tt+1] <- update.occ.prob(occ.prob = occ.prob[,tt], dm, ext.vars, col.vars, pars)
   }
-  occ.state
+  occ.prob
 }
 
 ##### Data #####
@@ -78,10 +76,18 @@ nt <- 3
 # some made-up data
 occ.dat <- matrix(c(1, 0, 0, 1, 1, 0, 1, 1, 1), ncol = nt) |> as_data()
 
-occ.state <- dyn.occ(init.state = c(1, 0, 0), nsteps = nt, dm = dm, ext.vars = ev, col.vars = cv, pars = p.list)
+##### Dynamic model of occupancy over time #####
+occ.state <- dyn.occ(init.prob = c(1, 0, 0), nsteps = nt, dm = dm, ext.vars = ev, col.vars = cv, pars = p.list)
 
 distribution(occ.dat) <- bernoulli(occ.state[,-1]) 
 
+##### Some plots and diagnostics #####
 o.mod <- model(occ.state)
 
+plot(o.mod)
+
+sims <- calculate(occ.state, nsim = 5)
+sims$occ.state[1,,]
+
+## Currently we have a working model in which occupancy state is observed directly.  Next layer is to add detection within primary session
 
