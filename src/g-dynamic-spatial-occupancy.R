@@ -2,8 +2,6 @@
 # is a function of number of occupancies in surrounding cells (i.e., spatially explicit)
 
 # use data structures of SpOccupancy, which are considerably nicer than those of unmarked.
-
-library(greta)
 #library(greta.dynamics)
 
 ###### Priors ######
