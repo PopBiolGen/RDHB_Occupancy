@@ -10,7 +10,7 @@ library(greta)
 col.b <- normal(mean = 0, sd = 2, dim = c(2,1)) # colonisation coefficients (intercept and immigration)
 ext.b <- normal(mean = 0, sd = 2, dim = c(2,1)) # extinction coefficients (intercept and control effort)
 
-k <- uniform(0, 1) # rate of spatial decay
+k <- uniform(0.5, 1) # rate of spatial decay
 
 # parameter list
 p.list  <- list(col.b = col.b,
@@ -42,7 +42,7 @@ update.occ.prob <- function(occ.prob, dm, ext.vars, col.vars, pars){
   (1-occ.prob)*ilogit(pred.col) + occ.prob*(1-ilogit(pred.ext)) # marginalised occupancy probability
 }
 
-# run over t time steps
+# run over t time primary steps
 dyn.occ <- function(init.prob, nsteps, dm, ext.vars, col.vars, pars){
   occ.prob <- greta_array(dim = c(nrow(ext.vars), nsteps + 1))
   occ.prob[, 1] <- init.prob
@@ -52,9 +52,16 @@ dyn.occ <- function(init.prob, nsteps, dm, ext.vars, col.vars, pars){
   occ.prob
 }
 
+# function to return detection probability (P(det | occupied))
+det.prob <- function(obs.vars, pars){
+  if (nrow(pars$det) != ncol(obs.vars)) stop("Dimension mismatch between variables and parameters")
+  pred.det <- obs.vars %*% pars$det.b
+  ilogit(pred.det) # detection probability from covariates
+}
+
 ##### Data #####
 # Set up a 1D distance matrix
-nsites <- 3
+nsites <- 10
 dm <- as.matrix(dist(cbind(rep(0, nsites), 1:nsites), diag = TRUE, upper = TRUE))
 dm <- as_data(dm)
 
@@ -74,10 +81,10 @@ cv <- data.frame(intercept = rep(1, nsites)) |>
 # n time steps
 nt <- 3
 # some made-up data
-occ.dat <- matrix(c(1, 0, 0, 1, 1, 0, 1, 1, 1), ncol = nt) |> as_data()
+occ.dat <- matrix(sample(0:1, size = nt*nsites, replace = TRUE), ncol = nt) |> as_data()
 
 ##### Dynamic model of occupancy over time #####
-occ.state <- dyn.occ(init.prob = c(1, 0, 0), nsteps = nt, dm = dm, ext.vars = ev, col.vars = cv, pars = p.list)
+occ.state <- dyn.occ(init.prob = c(1, rep(0, nsites-1)), nsteps = nt, dm = dm, ext.vars = ev, col.vars = cv, pars = p.list)
 
 distribution(occ.dat) <- bernoulli(occ.state[,-1]) 
 
