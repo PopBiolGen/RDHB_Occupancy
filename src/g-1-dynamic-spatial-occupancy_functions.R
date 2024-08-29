@@ -32,12 +32,13 @@ update.occ.prob <- function(occ.prob, dm, ext.vars, col.vars, pars){
 
 # run over t time primary steps
 # occ.prob is JJ * (TT+1) matrix with first column giving initial occupancy at each site.
-dyn.occ <- function(occ.prob, nsteps, dm, ext.vars, col.vars, pars){
-  if (ncol(occ.prob) != (nsteps+1)) stop("Occupancy matrix columns not equal to number of steps +1")
+dyn.occ <- function(init.site, nsteps, dm, ext.vars, col.vars, pars){
+  occ.prob <- matrix(0, nrow = nrow(col.vars), ncol = nsteps+1) # make occupancy matrix
+  occ.prob[init.site, 1] <- 1 # initialise
   for (tt in 1:nsteps){
     occ.prob[,tt+1] <- update.occ.prob(occ.prob = occ.prob[,tt], dm, ext.vars, col.vars, pars)
   }
-  occ.prob
+  occ.prob[, -1] # remove initial column to return JJ * TT matrix
 }
 
 # function to return detection probability (P(det | occupied))
