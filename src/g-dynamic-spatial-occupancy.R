@@ -9,7 +9,7 @@ source("src/g-2-simulate-dynamic-occupancy.R")
 
 ###### Priors ######
 col.int <- normal(mean = -5, sd = 2)
-col.b <- normal(mean = 0, sd = 2) # colonisation coefficients (intercept and immigration)
+col.b <- normal(mean = 0, sd = 6) # colonisation coefficients (intercept and immigration)
 ext.int <- normal(mean = -5, sd = 2)
 ext.b <- normal(mean = 0, sd = 2) # extinction coefficients (intercept and control effort)
 det.int <- normal(mean = 0, sd = 2)
@@ -69,7 +69,7 @@ for (jj in 1:JJ){
     det.vars <- cbind(rep(1, nrow(det.vars)), det.vars)
     pred.det <- det.vars %*% p.list$det.b # predictor of log-odds of detection
     prob.det <- ilogit(pred.det)
-    ind.var <- !(1 %in% obs.jj.tt)
+    ind.var <- !(1 %in% obs.jj.tt) # indicator variable - no detections in time period
     lhood[ii:(ii+n.obs-1)] <- os*(prob.det*obs.jj.tt + (1-prob.det)*(1-obs.jj.tt)) + (1-os)*ind.var # insert likelihood formula
     ii <- ii+n.obs
   }
@@ -84,13 +84,8 @@ distribution(zt) <- poisson(neg.llhood)
 ##### Some plots and diagnostics #####
 o.mod <- model(occ.state, col.int, col.b, ext.int, ext.b, det.int, det.b1, det.b2, k)
 
-plot(o.mod)
+#plot(o.mod)
 
-draws <- mcmc(o.mod)
+draws <- mcmc(model = o.mod, n_cores = 2)
 
-
-# sims <- calculate(occ.state, nsim = 5)
-# sims$occ.state[1,,]
-
-## Currently we have a working model in which occupancy state is observed directly.  Next layer is to add detection within primary session
-
+summary(draws)
