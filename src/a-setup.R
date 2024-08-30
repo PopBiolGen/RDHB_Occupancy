@@ -20,7 +20,7 @@ aggregate_data <- function(df, cell.size = 0.005){
   # make a grid and spatial join to point data 
   df_grid <- spatial_aggregation(df, cell.size)
   # place cell.id onto points data
-  cells <- select(df_grid, cell.id) %>% st_drop_geometry()
+  cells <- select(df_grid, ID, cell.id) %>% st_drop_geometry()
   df <- left_join(df, cells)
   # make grid summaries
   df_grid <- make_grid_summary(df_grid)

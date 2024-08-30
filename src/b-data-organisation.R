@@ -17,9 +17,11 @@ df <- read_xlsx(path = file.path(data_dir, "RDHBSurveillance_2024-08-12.xlsx"),
                 sheet = "Export",
                 col_types = coltypes)
 
+df <- mutate(df, ID = row_number()) # add an ID column
+
 # extract the colony data
 cny.df <- df %>%
-  filter(!is.na(ColonyNumber) & ColonyNumber != 0 )
+  filter(!is.na(ColonyNumber) & ColonyNumber != 0)
 
 # get first record for each colony for binding back to df
 cny.detected <- cny.df %>% 
@@ -30,7 +32,8 @@ cny.detected <- cny.df %>%
 
 # organise colony data as its own entity
 cny.df <- cny.df %>%
-  select(date = dateOfActivity,
+  select(ID,
+         date = dateOfActivity,
          lat = Lat,
          long = Long,
          contains("Comb"), 
@@ -46,7 +49,8 @@ df <- df %>%
   rbind(cny.detected) %>% # put single detection of each colony back in
   mutate(presence = ifelse(grepl("Red", SpeciesObservedValue), 1, 0),
          hive.removed = ifelse(grepl("Colony found", SurveillanceActivityValue, ignore.case = TRUE), 1, 0)) %>% # present/absent data
-  select(date.time = dateOfActivity, 
+  select(ID,
+         date.time = dateOfActivity, 
          lat = Lat, 
          long = Long, 
          dist.forage.m = DistanceFromKnownForage_meters,
