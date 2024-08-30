@@ -1,7 +1,7 @@
 # read in setup stuff
 source("src/a-setup.R")
 
-# get survey data (contains points, polylines and polygons)
+# get survey data (contains points only)
 coltypes <- c("numeric", "numeric", "numeric", "text", 
               "numeric", "numeric", "numeric", "numeric", "text", "numeric", "numeric", 
               "numeric", "numeric", "numeric", "numeric", "date", "date", "text", 

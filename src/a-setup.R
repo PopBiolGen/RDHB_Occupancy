@@ -16,17 +16,17 @@ data_dir <- file.path(Sys.getenv("DATA_PATH"), "RDHB")
 ##### Custom functions #####
 
 # To aggregate data in space and time
-aggregate_data <- function(df, cell.size = 0.005, n.periods = 6){
+aggregate_data <- function(df, cell.size = 0.005){
   # make a grid and spatial join to point data 
   df_grid <- spatial_aggregation(df, cell.size)
   # place cell.id onto points data
-  cells <- select(df_grid, ID, cell.id) %>% st_drop_geometry()
+  cells <- select(df_grid, cell.id) %>% st_drop_geometry()
   df <- left_join(df, cells)
   # make grid summaries
   df_grid <- make_grid_summary(df_grid)
   # make time aggregations
   if (!("time.step" %in% names(df))){
-    df <- temporal_aggregation(df, n.periods = n.periods)  
+    df <- temporal_aggregation(df)  
   }
   return(list(df = df, df_grid = df_grid))
 }
@@ -125,8 +125,10 @@ spatial_aggregation <- function(sf.df, cell.size){
 
 # To undertake temporal aggregation
 # take sf points dataframe
-temporal_aggregation <- function(sf.df, n.periods){
+# aggregates to year-month
+temporal_aggregation <- function(sf.df){
   sf.df <- sf.df %>%
-    mutate(time.step = as.numeric(cut(date.time, breaks = n.periods)))
+    mutate(ym = format(date.time, "%Y-%m"),
+      time.step = as.numeric(as.factor(ym)))
   sf.df
 }
