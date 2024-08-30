@@ -45,16 +45,10 @@ site_covs <- data_select %>%
                         mean.prop = mean(presence, na.rm = TRUE),
                         n.hive.removed = sum(hive.removed),
                         mean.dist2 = mean.dist^2) 
-# append a distance from grid cell with highest prevalence
-#max_prevalence <- filter(site_covs, mean.prop == max(mean.prop))
-#site_covs$dist_prev <- st_distance(site_covs, max_prevalence) 
-
-#site_covs <- st_drop_geometry(site_covs) %>%
-#              as.data.frame()
 
 # make observation-level covariate list
 # to do this
-make_obs_covs_list <- function(df, cov.names = c("hour", "hour2", "water")){
+make_obs_covs_list <- function(df, cov.names = c("water")){
   # to make site by time dataframe for a given covariate 
   ind_obs_cov <- function(vec){
     tibble(cell.id = df$cell.id, obs = df$obs, vec = vec) %>%
@@ -67,14 +61,16 @@ make_obs_covs_list <- function(df, cov.names = c("hour", "hour2", "water")){
   out
 }
 
+
 obs_covs <- data_select %>%
             st_drop_geometry() %>%
-            select(cell.id, obs, hour, hour2, water) %>%
+            select(cell.id, obs, water) %>%
             make_obs_covs_list()
 
 # create an unmarked frame
 umf <- unmarkedFrameOccu(y = obs_matrix, siteCovs = site_covs, obsCovs = obs_covs)
 
-fit <- occu(~ 1 + water + hour + hour2
+fit <- occu(~ 1 + water
             ~ 1 + mean.dist, 
             data = umf)
+summary(fit)
