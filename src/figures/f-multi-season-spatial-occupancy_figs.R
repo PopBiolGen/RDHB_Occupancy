@@ -1,11 +1,5 @@
 # to visualise results from the multi-season-spatial-occupancy model
 # source("src/f-multi-season-spatial-occupancy.R")
-source("src/b-data-organisation.R")
-# aggregate data (time and space), drop unsampled grid cells
-n.times <- 10
-agg_data <- df %>% aggregate_data(n.periods = n.times)
-agg_data$df_grid <- filter(agg_data$df_grid, !is.na(mean.prop)) 
-
 
 library(gganimate)
 library(spOccupancy)
@@ -41,7 +35,7 @@ anim <- p +
   transition_states(time.step, transition_length = 2, state_length = 1) +
   ease_aes("cubic-in-out")
 
-animate(anim, nframes = max(gd.long$time.step), fps = 1)
+#animate(anim, nframes = max(gd.long$time.step), fps = 1)
 
 
 ##### Make map of occupancy in last time step #####
@@ -51,10 +45,10 @@ p <- ggplot() +
   coord_sf(xlim = c(bbox["xmin"], bbox["xmax"]), ylim = c(bbox["ymin"], bbox["ymax"])) +  # Apply bounding box
   scale_fill_viridis_c(option = "plasma") +
   theme_minimal() +
-  labs(title = paste0("Time step: ", max(gd.long$time.step)))
+  labs(title = paste0("Month of response: ", max(gd.long$time.step)))
 
-p
-ggsave(filename = "out/multi-season-spatial-occupancy.pdf")
+
+ggsave(filename = "out/multi-season-spatial-occupancy.png")
 
 
 ##### Examine how occupancy changes over time #####
@@ -62,13 +56,13 @@ est.psi.time <- apply(est.psi, MARGIN = 2, mean)
 est.psi.time.se <- apply(est.psi, MARGIN = 2, sd)/sqrt(nrow(est.psi)) # loses parameter uncertainty
 
 p <- ggplot() +
-  geom_point(aes(x = 1:n.times, y = est.psi.time)) +
-  geom_errorbar(aes(x = 1:n.times, 
+  geom_point(aes(x = 1:TT, y = est.psi.time)) +
+  geom_errorbar(aes(x = 1:TT, 
                     ymin = est.psi.time-2*est.psi.time.se,
                     ymax = est.psi.time+2*est.psi.time.se),
                 width = 0) +
-  labs(x = "Time step", y = "Mean occupancy") +
+  labs(x = "Months of response", y = "Mean occupancy") +
   ylim(0, 0.3) +
   theme_minimal()
-p
-ggsave(filename = "out/multi-season-spatial-occupancy-mean-occ-over-time.pdf")
+
+ggsave(filename = "out/multi-season-spatial-occupancy-mean-occ-over-time.png")

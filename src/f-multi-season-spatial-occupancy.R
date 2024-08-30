@@ -151,3 +151,4 @@ ms.so.fit <- stPGOcc(occ.formula = ~1,
 
 summary(ms.so.fit)
 save(ms.so.fit, file = "out/f-ms-so_fit.RData")
+source("src/figures/f-multi-season-spatial-occupancy_figs.R")
