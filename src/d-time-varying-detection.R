@@ -21,7 +21,7 @@ agg_data.ng <- lapply(agg_data, st_drop_geometry)
 
 ##### make occu inputs ####
 # select data to use
-data_select <- select(agg_data.ng$df, cell.id, time.step, date.time, pres, hour, hour2, water, dist_0, hive.removed) %>%
+data_select <- select(agg_data.ng$df, cell.id, time.step, date.time, presence, hour, hour2, water, dist.0, hive.removed) %>%
               mutate(time.step2 = time.step^2) %>% # this is a fudge compared to a proper 1st- or 2nd-order Fourier function; exploration
               arrange(cell.id, date.time) %>%
               group_by(cell.id) %>%
@@ -31,19 +31,19 @@ data_select <- select(agg_data.ng$df, cell.id, time.step, date.time, pres, hour,
 
 # make a site by time observation matrix
 obs_matrix <- data_select %>%
-              select(cell.id, pres, obs) %>% 
+              select(cell.id, presence, obs) %>% 
               group_by(cell.id) %>%
-              tidyr::pivot_wider(names_from = obs, values_from = pres) %>%
+              tidyr::pivot_wider(names_from = obs, values_from = presence) %>%
               ungroup() %>%
               select(-cell.id) %>%
               as.matrix()
 
 # make a site by n_covariates dataframe
 site_covs <- data_select %>%
-              select(cell.id, dist_0, pres, hive.removed) %>% # site covariates
+              select(cell.id, dist.0, presence, hive.removed) %>% # site covariates
               group_by(cell.id) %>%
-              summarise(mean.dist = mean(dist_0, na.rm = TRUE),
-                        mean.prop = mean(pres, na.rm = TRUE),
+              summarise(mean.dist = mean(dist.0, na.rm = TRUE),
+                        mean.prop = mean(presence, na.rm = TRUE),
                         n.hive.removed = sum(hive.removed),
                         mean.dist2 = mean.dist^2) %>%
               ungroup() %>%

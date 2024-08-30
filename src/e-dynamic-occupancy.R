@@ -19,19 +19,19 @@ agg_data.ng <- lapply(agg_data, st_drop_geometry)
 
 ##### make occu inputs ####
 # select data to use and toss into multiframe
-data_select <- select(agg_data.ng$df, cell.id, time.step, date.time, pres, water, dist_0, hive.removed) %>%
+data_select <- select(agg_data.ng$df, cell.id, time.step, date.time, presence, water, dist.0, hive.removed) %>%
   mutate(time.step2 = time.step^2) %>% # this is a fudge compared to a proper 1st- or 2nd-order Fourier function; exploration
   arrange(cell.id, date.time) %>%
   group_by(cell.id, time.step) %>% # T <- max(data_select$time.step)
   mutate(obs = paste0("obs_", row_number())) %>% # J <- length(unique(data_select$obs))
   ungroup() %>%
-  select(time.step, cell.id, date.time, obs, pres, water, dist_0, hive.removed) 
+  select(time.step, cell.id, date.time, obs, presence, water, dist.0, hive.removed) 
 
 # make a site by n_covariates dataframe (M rows) M <- nrow(site_covs)
 site_covs <- data_select %>%
-  select(cell.id, dist_0, hive.removed) %>% # site covariates
+  select(cell.id, dist.0, hive.removed) %>% # site covariates
   group_by(cell.id) %>%
-  summarise(mean.dist = mean(dist_0, na.rm = TRUE), # in kms
+  summarise(mean.dist = mean(dist.0, na.rm = TRUE), # in kms
             n.hive.removed = sum(hive.removed),
             n.records = n()) %>%
   ungroup() %>%
@@ -40,9 +40,9 @@ site_covs <- data_select %>%
 
 # make a site by time observation matrix (M x TJ matrix, columns in time.step-major observation-minor order)
 obs_matrix <- data_select %>%
-  select(cell.id, time.step, pres, obs) %>% 
+  select(cell.id, time.step, presence, obs) %>% 
   mutate(time.step = paste0("time_", time.step)) %>%
-  tidyr::pivot_wider(names_from = time.step, values_from = pres) %>%
+  tidyr::pivot_wider(names_from = time.step, values_from = presence) %>%
   tidyr::pivot_wider(names_from = obs, values_from = contains("time_")) %>%
   select(-cell.id) %>%
   as.matrix()

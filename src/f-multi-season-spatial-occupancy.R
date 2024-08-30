@@ -20,13 +20,13 @@ agg_data$df_grid <- filter(agg_data$df_grid, !is.na(mean.prop))
 agg_data.ng <- lapply(agg_data, st_drop_geometry)
 
 # select data to use
-data_select <- select(agg_data.ng$df, cell.id, time.step, date.time, pres, water, dist_0, hive.removed) %>%
+data_select <- select(agg_data.ng$df, cell.id, time.step, date.time, presence, water, dist.0, hive.removed) %>%
   mutate(time.step2 = time.step^2) %>% # this is a fudge compared to a proper 1st- or 2nd-order Fourier function; exploration
   arrange(cell.id, date.time) %>%
   group_by(cell.id, time.step) %>% # 
   mutate(obs = paste0("obs_", row_number())) %>% # J <- length(unique(data_select$obs))
   ungroup() %>%
-  select(time.step, cell.id, date.time, obs, pres, water, dist_0, hive.removed) 
+  select(time.step, cell.id, date.time, obs, presence, water, dist.0, hive.removed) 
 
 # define dimensions for data objects
 TT <- n.times # number of primary time periods
@@ -39,13 +39,13 @@ KK <- length(unique(data_select$obs)) # maximum number of replicates at a site
 y <- array(dim = c(JJ, TT, KK))
 
 pa <- data_select %>%
-  select(cell.id, time.step, pres)
+  select(cell.id, time.step, presence)
 
 cell <- unique(data_select$cell.id)
  for (jj in 1:JJ){ #for each cell
    temp <- filter(pa, cell.id == cell[jj])
    for (tt in 1:TT){ # for each primary time period
-     temp.vec <- temp$pres[temp$time.step == tt]
+     temp.vec <- temp$presence[temp$time.step == tt]
      if (length(temp.vec) == 0) next
      y[jj, tt, 1:length(temp.vec)] <- temp.vec
    }
@@ -60,9 +60,9 @@ rm(pa)
 #with rows corresponding to sites and columns correspond to primary time periods.
 
 oc <- data_select %>%
-  select(cell.id, time.step, dist_0) %>%
+  select(cell.id, time.step, dist.0) %>%
   group_by(cell.id, time.step) %>%
-  summarise(mean.dist = mean(dist_0, na.rm = TRUE)) %>%
+  summarise(mean.dist = mean(dist.0, na.rm = TRUE)) %>%
   ungroup()
 
 

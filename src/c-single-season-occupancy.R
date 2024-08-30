@@ -22,7 +22,7 @@ agg_data <- lapply(agg_data, st_drop_geometry)
 
 ##### make occu inputs ####
 # select data to use
-data_select <- select(agg_data$df, cell.id, date.time, pres, hour, hour2, water, dist_0, hive.removed) %>%
+data_select <- select(agg_data$df, cell.id, date.time, presence, water, dist.0, hive.removed) %>%
               arrange(cell.id, date.time) %>%
               group_by(cell.id) %>%
               mutate(obs = paste0("obs_", row_number())) %>%
@@ -31,18 +31,18 @@ data_select <- select(agg_data$df, cell.id, date.time, pres, hour, hour2, water,
 
 # make a site by time observation matrix
 obs_matrix <- data_select %>%
-              select(cell.id, obs, pres) %>%
-              tidyr::pivot_wider(names_from = obs, values_from = pres) %>%
+              select(cell.id, obs, presence) %>%
+              tidyr::pivot_wider(names_from = obs, values_from = presence) %>%
               select(-cell.id) %>%
               st_drop_geometry() %>%
               as.matrix()
 
 # make a site by n_covariates dataframe
 site_covs <- data_select %>%
-              select(cell.id, dist_0, pres, hive.removed) %>% # site covariates
+              select(cell.id, dist.0, presence, hive.removed) %>% # site covariates
               group_by(cell.id) %>%
-              summarise(mean.dist = mean(dist_0, na.rm = TRUE),
-                        mean.prop = mean(pres, na.rm = TRUE),
+              summarise(mean.dist = mean(dist.0, na.rm = TRUE),
+                        mean.prop = mean(presence, na.rm = TRUE),
                         n.hive.removed = sum(hive.removed),
                         mean.dist2 = mean.dist^2) 
 # append a distance from grid cell with highest prevalence
