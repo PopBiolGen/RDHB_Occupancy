@@ -75,3 +75,5 @@ df <- mutate(df,
              time.0 = (date.time-earliest_record$date.time)/(60*60*24), # time since incursion detected
              water = ifelse(grepl("water", Notes, ignore.case = TRUE), 1, 0)) %>% #water around?
   select(-Notes)
+
+rm(cny.detected, earliest_record, coltypes)
