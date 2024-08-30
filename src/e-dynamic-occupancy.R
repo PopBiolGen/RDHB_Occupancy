@@ -7,10 +7,8 @@ source("src/b-data-organisation.R")
 # additional libraries required
 library(unmarked)
 
-n.times <- 10 # number of time slices to break the data into
-
 # aggregate data (time and space), drop unsampled grid cells
-agg_data <- df %>% aggregate_data(n.periods = n.times)
+agg_data <- df %>% aggregate_data()
 agg_data$df_grid <- filter(agg_data$df_grid, !is.na(mean.prop)) 
 
 # drop geometry
@@ -72,7 +70,8 @@ obs_covs <- data_select %>%
   select(cell.id, time.step, obs, water)
 
 # create an unmarked frame
-umf.do <- unmarkedMultFrame(y = obs_matrix, siteCovs = site_covs, obsCovs = obs_covs, numPrimary = n.times)
+n.steps <- length(unique(data_select$time.step))
+umf.do <- unmarkedMultFrame(y = obs_matrix, siteCovs = site_covs, obsCovs = obs_covs, numPrimary = n.steps)
 
 # fit a dynamic occupancy model
 start.values <- c(0, 0, 0, 0, -2, 0)
