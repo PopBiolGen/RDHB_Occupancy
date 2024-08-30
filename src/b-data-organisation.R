@@ -17,8 +17,6 @@ df <- read_xlsx(path = file.path(data_dir, "RDHBSurveillance_2024-08-12.xlsx"),
                 sheet = "Export",
                 col_types = coltypes)
 
-### to do, cast to sf ###
-
 # extract the colony data
 cny.df <- df %>%
   filter(!is.na(ColonyNumber) & ColonyNumber != 0 ) %>%
@@ -56,13 +54,9 @@ df <- df %>%
   st_as_sf(coords = c("long", "lat"), crs = 4326) # cast to a spatial object
 
 # calculate location of earliest record and distance from there to all other records
-# we want distance in metres, so first cast to Australian Albers (CRS = 3577)
-df_albers <- select(df, geometry, pres, date.time) %>%
-              st_transform(crs = 3577)
-earliest_record <- filter(df_albers, pres==1) %>%
+earliest_record <- filter(df, presence == 1) %>%
                     filter(date.time == min(date.time))
-df$dist_0 <- as.numeric(st_distance(earliest_record, df_albers))/1000 # in kms
-rm(df_albers)
+df$dist_0 <- as.numeric(st_distance(earliest_record, df))/1000 # in kms
 
 # make other useful covariates
 df <- mutate(df, time_0 = (date.time-earliest_record$date.time)/(60*60*24), # time since incursion detected
