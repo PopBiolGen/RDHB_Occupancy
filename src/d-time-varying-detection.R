@@ -9,10 +9,8 @@ source("src/b-data-organisation.R")
 # additional libraries required
 library(unmarked)
 
-n.seasons <- 6 # number of "seasons" to break the data into
-
 # aggregate data (time and space), drop unsampled grid cells
-agg_data <- df %>% aggregate_data(n.periods = n.seasons)
+agg_data <- df %>% aggregate_data()
 agg_data$df_grid <- filter(agg_data$df_grid, !is.na(mean.prop)) 
 
 # drop geometry
@@ -49,12 +47,6 @@ site_covs <- data_select %>%
               ungroup() %>%
               mutate(cell.id = factor(cell.id)) # make cell.id a factor
             
-# append a distance from grid cell with highest prevalence
-#max_prevalence <- filter(site_covs, mean.prop == max(mean.prop))
-#site_covs$dist_prev <- st_distance(site_covs, max_prevalence) 
-
-#site_covs <- st_drop_geometry(site_covs) %>%
-#              as.data.frame()
 
 # make observation-level covariate list
 # to do this
@@ -82,3 +74,4 @@ umf.tvd <- unmarkedFrameOccu(y = obs_matrix, siteCovs = site_covs, obsCovs = obs
 fit.tvd <- occu(~ 1 + time.step + time.step2 + water + hour + hour2
             ~ 1 + mean.dist, 
             data = umf.tvd)
+summary(fit.tvd)
