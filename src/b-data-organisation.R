@@ -47,12 +47,16 @@ cny.df <- cny.df %>%
 df <- df %>%
   filter(is.na(ColonyNumber) | ColonyNumber == 0 ) %>% # remove colony data
   rbind(cny.detected) %>% # put single detection of each colony back in
-  mutate(presence = ifelse(grepl("Red", SpeciesObservedValue), 1, 0),
-         hive.removed = ifelse(grepl("Colony found", SurveillanceActivityValue, ignore.case = TRUE), 1, 0)) %>% # present/absent data
+  mutate(presence = ifelse(grepl("Red", SpeciesObservedValue), 1, 0), # present/absent data
+         hive.removed = ifelse(grepl("Colony found", SurveillanceActivityValue, ignore.case = TRUE), 1, 0),
+         hour = hour(dateOfActivity),
+         hour2 = hour^2) %>% 
   select(ID,
          date.time = dateOfActivity, 
          lat = Lat, 
          long = Long, 
+         hour, 
+         hour2,
          dist.forage.m = DistanceFromKnownForage_meters,
          dist.water.m = DistanceFromKnownWaterSource_met,
          dist.road.m = DistanceFromRoad_meters,

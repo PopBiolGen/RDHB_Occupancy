@@ -22,7 +22,7 @@ agg_data <- lapply(agg_data, st_drop_geometry)
 
 ##### make occu inputs ####
 # select data to use
-data_select <- select(agg_data$df, cell.id, date.time, presence, water, dist.0, hive.removed) %>%
+data_select <- select(agg_data$df, cell.id, date.time, presence, water, hour, hour2, dist.0, hive.removed) %>%
               arrange(cell.id, date.time) %>%
               group_by(cell.id) %>%
               mutate(obs = paste0("obs_", row_number())) %>%
@@ -48,7 +48,7 @@ site_covs <- data_select %>%
 
 # make observation-level covariate list
 # to do this
-make_obs_covs_list <- function(df, cov.names = c("water")){
+make_obs_covs_list <- function(df, cov.names = c("water", "hour", "hour2")){
   # to make site by time dataframe for a given covariate 
   ind_obs_cov <- function(vec){
     tibble(cell.id = df$cell.id, obs = df$obs, vec = vec) %>%
@@ -64,13 +64,13 @@ make_obs_covs_list <- function(df, cov.names = c("water")){
 
 obs_covs <- data_select %>%
             st_drop_geometry() %>%
-            select(cell.id, obs, water) %>%
+            select(cell.id, obs, water, hour, hour2) %>%
             make_obs_covs_list()
 
 # create an unmarked frame
 umf <- unmarkedFrameOccu(y = obs_matrix, siteCovs = site_covs, obsCovs = obs_covs)
 
-fit <- occu(~ 1 + water
+fit <- occu(~ 1 + water + hour + hour2
             ~ 1 + mean.dist, 
             data = umf)
 summary(fit)
