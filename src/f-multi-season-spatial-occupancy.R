@@ -10,10 +10,8 @@ library(spOccupancy)
 ##### Organise data #####
 # data is a list containing data necessary for model fitting. Valid tags are y, occ.covs, det.covs, coords, and grid.index.
 
-n.times <- 10 # number of time slices to break the data into
-
 # aggregate data (time and space), drop unsampled grid cells
-agg_data <- df %>% aggregate_data(n.periods = n.times)
+agg_data <- df %>% aggregate_data()
 agg_data$df_grid <- filter(agg_data$df_grid, !is.na(mean.prop)) 
 
 # drop geometry
@@ -29,7 +27,7 @@ data_select <- select(agg_data.ng$df, cell.id, time.step, date.time, presence, w
   select(time.step, cell.id, date.time, obs, presence, water, dist.0, hive.removed) 
 
 # define dimensions for data objects
-TT <- n.times # number of primary time periods
+TT <- length(unique(data_select$time.step)) # number of primary time periods
 JJ <- length(unique(data_select$cell.id)) # number of sites
 KK <- length(unique(data_select$obs)) # maximum number of replicates at a site
 
@@ -126,8 +124,6 @@ for (vv in var.vec){ # for each variable
 # In such a case, grid.index is an indexing vector of length J, 
 # where each value of grid.index indicates the corresponding row in coords that the given site corresponds to. 
 # Note that spOccupancy assumes coordinates are specified in a projected coordinate system.
-
-
 coords <- select(agg_data$df_grid, geometry, cell.id) %>%
   st_transform(crs = 3577) %>% # transform to albers
   arrange(cell.id) %>%
