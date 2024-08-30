@@ -45,6 +45,7 @@ df <- df %>%
          host.flower = HostFloweringValue,
          slope.orientation = SlopeOrientation,
          temperatue = Temperature,
+         Notes,
          hive.removed,
          presence, 
          abundance = AbundanceValue) %>%
@@ -56,30 +57,10 @@ df <- df %>%
 # calculate location of earliest record and distance from there to all other records
 earliest_record <- filter(df, presence == 1) %>%
                     filter(date.time == min(date.time))
-df$dist_0 <- as.numeric(st_distance(earliest_record, df))/1000 # in kms
+df$dist.0 <- as.numeric(st_distance(earliest_record, df))/1000 # in kms
 
 # make other useful covariates
-df <- mutate(df, time_0 = (date.time-earliest_record$date.time)/(60*60*24), # time since incursion detected
-             water = ifelse(grepl("water", Notes, ignore.case = TRUE) | # water around?
-                              grepl("water", HostOther, ignore.case = TRUE), 1, 0),
-             flowering = ifelse(HostFlowering %in% c("2;#Partially Flowering", "3;#Fully Flowering"), 1, 0), # flowering host?
-             food.water = ifelse(grepl(1, flowering, ignore.case = TRUE) | # food or water
-                                   grepl(1, water, ignore.case = TRUE), 1, 0),
-             hive.removed = ifelse(grepl("Colony found", SurveillanceActivity, ignore.case = TRUE) | # hive removed?
-                                     grepl("Colony found", ActivityTXT, ignore.case = TRUE), 1, 0),
-             hour2 = hour^2) %>%
-  select(ID,
-         date.time, # grab useful stuff, ditch the rest
-         hour, 
-         hour2,
-         pres, 
-         lat, 
-         long, 
-         dist_0, 
-         time_0, 
-         water, 
-         flowering, 
-         food.water,
-         hive.removed,
-         geometry)
-#Tamrika Testing if this gets through to Ben
+df <- mutate(df, 
+             time.0 = (date.time-earliest_record$date.time)/(60*60*24), # time since incursion detected
+             water = ifelse(grepl("water", Notes, ignore.case = TRUE), 1, 0)) %>% #water around?
+  select(-Notes)
