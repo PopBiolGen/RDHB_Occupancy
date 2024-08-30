@@ -19,7 +19,17 @@ df <- read_xlsx(path = file.path(data_dir, "RDHBSurveillance_2024-08-12.xlsx"),
 
 # extract the colony data
 cny.df <- df %>%
-  filter(!is.na(ColonyNumber) & ColonyNumber != 0 ) %>%
+  filter(!is.na(ColonyNumber) & ColonyNumber != 0 )
+
+# get first record for each colony for binding back to df
+cny.detected <- cny.df %>% 
+  group_by(ColonyNumber) %>%
+  arrange(ColonyNumber, dateOfActivityTreatment) %>%
+  filter(row_number()==1) %>%
+  mutate(SurveillanceActivityValue = rep("Colony found", n()))
+
+# organise colony data as its own entity
+cny.df <- cny.df %>%
   select(date = dateOfActivity,
          lat = Lat,
          long = Long,
@@ -33,6 +43,7 @@ cny.df <- df %>%
 # tidy up, select only the useful columns, cast to sf
 df <- df %>%
   filter(is.na(ColonyNumber) | ColonyNumber == 0 ) %>% # remove colony data
+  rbind(cny.detected) %>% # put single detection of each colony back in
   mutate(presence = ifelse(grepl("Red", SpeciesObservedValue), 1, 0),
          hive.removed = ifelse(grepl("Colony found", SurveillanceActivityValue, ignore.case = TRUE), 1, 0)) %>% # present/absent data
   select(date.time = dateOfActivity, 
