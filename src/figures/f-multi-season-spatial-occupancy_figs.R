@@ -95,17 +95,17 @@ det.fun.water.sd <- apply(det.fun.samps, 2, sd)
 
 p <- ggplot() +
   geom_errorbar(aes(x = doy, 
-                    ymin = det.fun.mean-2*det.fun.sd,
-                    ymax = det.fun.mean+2*det.fun.sd),
-                width = 0,
-                col = "lightgrey") +
-  geom_line(aes(x = doy, y = det.fun.mean, col = "No water")) +
-  geom_errorbar(aes(x = doy, 
                     ymin = det.fun.mean.water-2*det.fun.water.sd,
                     ymax = det.fun.mean.water+2*det.fun.water.sd),
                 width = 0,
                 col = "lightgrey") +
   geom_line(aes(x = doy, y = det.fun.mean.water, col = "Water")) +
+  geom_errorbar(aes(x = doy, 
+                    ymin = det.fun.mean-2*det.fun.sd,
+                    ymax = det.fun.mean+2*det.fun.sd),
+                width = 0,
+                col = "lightgrey") +
+  geom_line(aes(x = doy, y = det.fun.mean, col = "No water")) +
   labs(x = "Day of year", y = "Detection probability") +
   scale_fill_manual('Legend Title', values=c('Water', 'No water')) +
   ylim(0, 0.4) +
