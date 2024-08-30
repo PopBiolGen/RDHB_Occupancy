@@ -50,3 +50,9 @@ rsconnect/
 
 # Output folder
 out/
+
+# Manuscript folder
+ms/
+
+# Mac stuff
+.DS_Store
