@@ -10,26 +10,24 @@ library(spOccupancy)
 ##### Organise data #####
 # data is a list containing data necessary for model fitting. Valid tags are y, occ.covs, det.covs, coords, and grid.index.
 
-n.times <- 10 # number of time slices to break the data into
-
 # aggregate data (time and space), drop unsampled grid cells
-agg_data <- df %>% aggregate_data(n.periods = n.times)
+agg_data <- df %>% aggregate_data()
 agg_data$df_grid <- filter(agg_data$df_grid, !is.na(mean.prop)) 
 
 # drop geometry
 agg_data.ng <- lapply(agg_data, st_drop_geometry)
 
 # select data to use
-data_select <- select(agg_data.ng$df, cell.id, time.step, date.time, pres, water, dist_0, hive.removed) %>%
+data_select <- select(agg_data.ng$df, cell.id, time.step, date.time, presence, water, dist.0, hive.removed) %>%
   mutate(time.step2 = time.step^2) %>% # this is a fudge compared to a proper 1st- or 2nd-order Fourier function; exploration
   arrange(cell.id, date.time) %>%
   group_by(cell.id, time.step) %>% # 
   mutate(obs = paste0("obs_", row_number())) %>% # J <- length(unique(data_select$obs))
   ungroup() %>%
-  select(time.step, cell.id, date.time, obs, pres, water, dist_0, hive.removed) 
+  select(time.step, cell.id, date.time, obs, presence, water, dist.0, hive.removed) 
 
 # define dimensions for data objects
-TT <- n.times # number of primary time periods
+TT <- length(unique(data_select$time.step)) # number of primary time periods
 JJ <- length(unique(data_select$cell.id)) # number of sites
 KK <- length(unique(data_select$obs)) # maximum number of replicates at a site
 
@@ -39,13 +37,13 @@ KK <- length(unique(data_select$obs)) # maximum number of replicates at a site
 y <- array(dim = c(JJ, TT, KK))
 
 pa <- data_select %>%
-  select(cell.id, time.step, pres)
+  select(cell.id, time.step, presence)
 
 cell <- unique(data_select$cell.id)
  for (jj in 1:JJ){ #for each cell
    temp <- filter(pa, cell.id == cell[jj])
    for (tt in 1:TT){ # for each primary time period
-     temp.vec <- temp$pres[temp$time.step == tt]
+     temp.vec <- temp$presence[temp$time.step == tt]
      if (length(temp.vec) == 0) next
      y[jj, tt, 1:length(temp.vec)] <- temp.vec
    }
@@ -60,9 +58,9 @@ rm(pa)
 #with rows corresponding to sites and columns correspond to primary time periods.
 
 oc <- data_select %>%
-  select(cell.id, time.step, dist_0) %>%
+  select(cell.id, time.step, dist.0) %>%
   group_by(cell.id, time.step) %>%
-  summarise(mean.dist = mean(dist_0, na.rm = TRUE)) %>%
+  summarise(mean.dist = mean(dist.0, na.rm = TRUE)) %>%
   ungroup()
 
 
@@ -126,8 +124,6 @@ for (vv in var.vec){ # for each variable
 # In such a case, grid.index is an indexing vector of length J, 
 # where each value of grid.index indicates the corresponding row in coords that the given site corresponds to. 
 # Note that spOccupancy assumes coordinates are specified in a projected coordinate system.
-
-
 coords <- select(agg_data$df_grid, geometry, cell.id) %>%
   st_transform(crs = 3577) %>% # transform to albers
   arrange(cell.id) %>%
@@ -155,3 +151,4 @@ ms.so.fit <- stPGOcc(occ.formula = ~1,
 
 summary(ms.so.fit)
 save(ms.so.fit, file = "out/f-ms-so_fit.RData")
+source("src/figures/f-multi-season-spatial-occupancy_figs.R")

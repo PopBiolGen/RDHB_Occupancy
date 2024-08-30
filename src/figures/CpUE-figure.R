@@ -22,11 +22,11 @@ p <- ggplot(hive.removals, aes(x = cum.catch, y = cpue)) +
   geom_smooth(method = "lm", formula = y ~ x, level = 0.95) +  
   labs(x = "Cumulative removals", y = "Catch per unit effort") +
   theme_minimal() 
-ggsave(filename = "out/cpue-cumulative-removals.pdf")
+ggsave(filename = "out/cpue-cumulative-removals.png")
 
 # effort over time
 p <- ggplot(hive.removals, aes(x = mid.date, y = effort)) +
   geom_point() +  # Scatter plot
   labs(x = "Date", y = "Effort") +
 theme_minimal() 
-ggsave(filename = "out/effort-date.pdf")
+ggsave(filename = "out/effort-date.png")

@@ -4,6 +4,7 @@ library(lubridate)
 library(sf)
 library(leaflet)
 library(ggplot2)
+library(readxl)
 
 
 # Define local directory containing data files
@@ -15,7 +16,7 @@ data_dir <- file.path(Sys.getenv("DATA_PATH"), "RDHB")
 ##### Custom functions #####
 
 # To aggregate data in space and time
-aggregate_data <- function(df, cell.size = 0.005, n.periods = 6){
+aggregate_data <- function(df, cell.size = 0.005){
   # make a grid and spatial join to point data 
   df_grid <- spatial_aggregation(df, cell.size)
   # place cell.id onto points data
@@ -25,7 +26,7 @@ aggregate_data <- function(df, cell.size = 0.005, n.periods = 6){
   df_grid <- make_grid_summary(df_grid)
   # make time aggregations
   if (!("time.step" %in% names(df))){
-    df <- temporal_aggregation(df, n.periods = n.periods)  
+    df <- temporal_aggregation(df)  
   }
   return(list(df = df, df_grid = df_grid))
 }
@@ -60,8 +61,8 @@ make_grid_summary <- function(df){
   get_first <- function(x){x[1]}
   grid_summ <- df %>%
     group_by(cell.id) %>%
-    summarise(mean.dist = mean(dist_0),
-              mean.prop = mean(pres),
+    summarise(mean.dist = mean(dist.0),
+              mean.prop = mean(presence),
               n.hive.removed = sum(hive.removed))
   # find neighbours for each cell
   grid_summ$neighbours <- lapply(1:nrow(grid_summ), function(i) {
@@ -72,6 +73,8 @@ make_grid_summary <- function(df){
 
 # To map points given points and grid_dataframe
 map_point_grid <- function(df, df_grid, summ.col = mean.prop){
+  # extract lat and long
+  df <- cbind(df, st_coordinates(df)) %>% rename(long = X, lat = Y)
   # make plots of the data and grid
   plot_grid <- df_grid %>%
     filter(!st_is_empty(geometry)) %>%
@@ -82,8 +85,8 @@ map_point_grid <- function(df, df_grid, summ.col = mean.prop){
     addTiles() %>%
     
     ## Add detection points
-    addCircleMarkers(data = df[df$pres == 0, ], ~long, ~lat, radius = 3, color = "blue", fillColor = "blue", fillOpacity = 1, group = "Absent") %>%
-    addCircleMarkers(data = df[df$pres == 1, ], ~long, ~lat, radius = 3, color = "red", fillColor = "red", fillOpacity = 1, group = "Present") %>%
+    addCircleMarkers(data = df[df$presence == 0, ], ~long, ~lat, radius = 3, color = "blue", fillColor = "blue", fillOpacity = 1, group = "Absent") %>%
+    addCircleMarkers(data = df[df$presence == 1, ], ~long, ~lat, radius = 3, color = "red", fillColor = "red", fillOpacity = 1, group = "Present") %>%
     
     
     addPolygons(data = plot_grid,
@@ -124,8 +127,10 @@ spatial_aggregation <- function(sf.df, cell.size){
 
 # To undertake temporal aggregation
 # take sf points dataframe
-temporal_aggregation <- function(sf.df, n.periods){
+# aggregates to year-month
+temporal_aggregation <- function(sf.df){
   sf.df <- sf.df %>%
-    mutate(time.step = as.numeric(cut(date.time, breaks = n.periods)))
+    mutate(ym = format(date.time, "%Y-%m"),
+      time.step = as.numeric(as.factor(ym)))
   sf.df
 }
