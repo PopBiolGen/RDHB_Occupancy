@@ -7,7 +7,7 @@ source("src/b-data-organisation.R")
 library(unmarked)
 
 # choose only the latest time interval to assume a single-season occupancy, drop unsampled grid cells
-agg_data <- df %>% temporal_aggregation( n.periods = 6) %>%
+agg_data <- df %>% temporal_aggregation() %>%
           filter(time.step == max(time.step, na.rm = TRUE)) %>%
           aggregate_data()
 agg_data$df_grid <- filter(agg_data$df_grid, !is.na(mean.prop)) 
