@@ -26,7 +26,7 @@ p <- ggplot() +
   geom_sf(data = gd.long, aes(fill = Occupancy)) +
   coord_sf(xlim = c(bbox["xmin"], bbox["xmax"]), ylim = c(bbox["ymin"], bbox["ymax"])) +  # Apply bounding box
   scale_fill_viridis_c(option = "plasma") +
-  theme_minimal() +
+  theme_bw() +
   labs(title = "Time step: {closest_state}")
 
 anim <- p +
@@ -42,7 +42,7 @@ p <- ggplot() +
   geom_sf(data = filter(gd.long, time.step == max(time.step)), aes(fill = Occupancy)) +
   coord_sf(xlim = c(bbox["xmin"], bbox["xmax"]), ylim = c(bbox["ymin"], bbox["ymax"])) +  # Apply bounding box
   scale_fill_viridis_c(option = "plasma") +
-  theme_minimal() +
+  theme_bw() +
   labs(title = paste0("Month of response: ", max(gd.long$time.step)))
 
 
@@ -62,7 +62,7 @@ p <- ggplot() +
                 width = 0) +
   labs(x = "Months of response", y = "Mean occupancy") +
   ylim(0, 0.3) +
-  theme_minimal()
+  theme_bw()
 
 ggsave(filename = "out/multi-season-spatial-occupancy-mean-occ-over-time.png")
 
@@ -72,48 +72,62 @@ doy <- 1:365
 doy.rad <- doy/365*2*pi
  
 # function to return predictions for each day of year given posterior sample of parameters
-det.pred.fun <- function(samp.vec, water = 0){
-  pred <- samp.vec["(Intercept)"] + water*samp.vec["water"] + sin(doy.rad)*samp.vec["sin.doy"] + cos(doy.rad)*samp.vec["cos.doy"]
+det.pred.fun <- function(samp.vec, water = 0, flower = 0){
+  pred <- samp.vec["(Intercept)"] + 
+    water*samp.vec["water"] + 
+    flower*samp.vec["flowering"] +
+    sin(doy.rad)*samp.vec["sin.doy"] + 
+    cos(doy.rad)*samp.vec["cos.doy"]
   plogis(pred) # back onto the probability scale
 }
 
+# function to generate mean and se of detection for each day of the year
+det.generator <- function(doy = 1:365, fit = ms.so.fit, water = 0, flower = 0) {
+  det.fun.samps <- matrix(ncol = length(doy), nrow = nrow(fit$alpha.samples))
+  for (ss in 1:nrow(fit$alpha.samples)){
+    det.fun.samps[ss,] <- det.pred.fun(fit$alpha.samples[ss,], water = water, flower = flower)
+  }
+  out.mean <- apply(det.fun.samps, 2, mean)
+  out.sd <- apply(det.fun.samps, 2, sd)
+  water <- rep(water, length(out.mean))
+  flower <- rep(flower, length(out.mean))
+  data.frame(water = water, flower = flower, doy = doy, mean = out.mean, se = out.sd)
+}
+
+
+# No flowering
 # without water
-det.fun.samps <- matrix(ncol = length(doy), nrow = nrow(ms.so.fit$alpha.samples))
-for (ss in 1:nrow(ms.so.fit$alpha.samples)){
-  det.fun.samps[ss,] <- det.pred.fun(ms.so.fit$alpha.samples[ss,])
-}
-det.fun.mean <- apply(det.fun.samps, 2, mean)
-det.fun.sd <- apply(det.fun.samps, 2, sd)
-
+nw.nf <- det.generator(water = 0, flower = 0)
 # with water
-det.fun.samps <- matrix(ncol = length(doy), nrow = nrow(ms.so.fit$alpha.samples))
-for (ss in 1:nrow(ms.so.fit$alpha.samples)){
-  det.fun.samps[ss,] <- det.pred.fun(ms.so.fit$alpha.samples[ss,], water = 1)
-}
-det.fun.mean.water <- apply(det.fun.samps, 2, mean)
-det.fun.water.sd <- apply(det.fun.samps, 2, sd)
+w.nf <- det.generator(water = 1, flower = 0)
 
-p <- ggplot() +
-  geom_errorbar(aes(x = doy, 
-                    ymin = det.fun.mean.water-2*det.fun.water.sd,
-                    ymax = det.fun.mean.water+2*det.fun.water.sd),
+# With flowering
+# without water
+nw.f <- det.generator(water = 0, flower = 1)
+# with water
+w.f <- det.generator(water = 1, flower = 1)
+
+plot.det <- rbind(nw.nf, w.nf, nw.f, w.f)
+rm(nw.nf, w.nf, nw.f, w.f)
+
+p <- ggplot(data = plot.det, aes(x = doy)) +
+  geom_errorbar(aes(ymin = mean-2*se,
+                    ymax = mean+2*se),
                 width = 0,
                 col = "lightgrey") +
-  geom_line(aes(x = doy, y = det.fun.mean.water, col = "Water")) +
-  geom_errorbar(aes(x = doy, 
-                    ymin = det.fun.mean-2*det.fun.sd,
-                    ymax = det.fun.mean+2*det.fun.sd),
-                width = 0,
-                col = "lightgrey") +
-  geom_line(aes(x = doy, y = det.fun.mean, col = "No water")) +
+  geom_line(aes(y = mean)) +
   labs(x = "Day of year", y = "Detection probability") +
   scale_fill_manual('Legend Title', values=c('Water', 'No water')) +
-  ylim(0, 0.4) +
-  theme_minimal()
+  facet_grid(rows = vars(water), 
+             cols = vars(flower),
+             labeller = labeller(flower = c(`0` = "No flowers", `1` = "Flowers"),
+                                 water = c(`0` = "No water", `1` = "Water"))) +
+  #ylim(0, 0.4) +
+  theme_bw()
 p
 ggsave(filename = "out/multi-season-spatial-occupancy-detection-over-time.png")
 
-rm(det.fun.samps, det.fun.mean, det.fun.mean.water, det.fun.sd, det.fun.water.sd)
+rm(plot.det)
 
 ##### Look at how correlation in occupancy changes with distance #####
 x <- seq(0, 10000, 10) # vector of distances, in km
@@ -132,6 +146,6 @@ p <- ggplot() +
                 col = "lightgrey") +
   geom_line(aes(x = x, y = cor.fun.mean)) +
   labs(x = "Distance (m)", y = "Correlation between sites") +
-  theme_minimal()
+  theme_bw()
 p
 ggsave(filename = "out/multi-season-spatial-occupancy-correlation-over-distance.png")

@@ -1,8 +1,3 @@
-library(ggplot2)
-
-# Get the data
-source("src/b-data-organisation.R")
-
 hive.removals <- select(df, date.time, hive.removed) %>%
   st_drop_geometry() %>%
   mutate(month = month(date.time),
