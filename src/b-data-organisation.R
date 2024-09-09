@@ -11,9 +11,9 @@ coltypes <- c("numeric", "numeric", "numeric", "text",
               "text", "numeric", "numeric", "numeric", "numeric", "text", "numeric", "text", "numeric", 
               "text", "text", "text", "text", "text", "numeric", 
               "numeric", "numeric", "text", "text", "text", "text", "text", "text", "text", 
-              "text", "text")
+              "text", "text", "text")
 
-df <- read_xlsx(path = file.path(data_dir, "RDHBSurveillance_2024-08-30.xlsx"), 
+df <- read_xlsx(path = file.path(data_dir, "RDHBSurveillance_2024-09-09.xlsx"), 
                 sheet = "Export",
                 col_types = coltypes)
 
