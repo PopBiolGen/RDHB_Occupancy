@@ -16,7 +16,7 @@ data_dir <- file.path(Sys.getenv("DATA_PATH"), "RDHB")
 ##### Custom functions #####
 
 # To aggregate data in space and time
-aggregate_data <- function(df, cell.size = 0.005){
+aggregate_data <- function(df, cell.size = 0.004){
   # make a grid and spatial join to point data 
   df_grid <- spatial_aggregation(df, cell.size)
   # place cell.id onto points data

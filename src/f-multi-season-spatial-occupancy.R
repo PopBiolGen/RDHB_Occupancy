@@ -12,19 +12,27 @@ library(spOccupancy)
 
 # aggregate data (time and space), drop unsampled grid cells
 agg_data <- df %>% aggregate_data()
-agg_data$df_grid <- filter(agg_data$df_grid, !is.na(mean.prop)) 
+agg_data$df <- filter(agg_data$df, !is.na(agg_data$df$cell.id))
+agg_data$df_grid <- filter(agg_data$df_grid, agg_data$df_grid$cell.id %in% agg_data$df$cell.id) 
 
 # drop geometry
 agg_data.ng <- lapply(agg_data, st_drop_geometry)
 
 # select data to use
-data_select <- select(agg_data.ng$df, cell.id, time.step, date.time, presence, water, dist.0, hive.removed) %>%
-  mutate(time.step2 = time.step^2) %>% # this is a fudge compared to a proper 1st- or 2nd-order Fourier function; exploration
+data_select <- select(agg_data.ng$df, 
+                      cell.id, 
+                      time.step, 
+                      date.time, 
+                      presence, 
+                      water,
+                      flowering,
+                      dist.0, 
+                      hive.removed) %>%
   arrange(cell.id, date.time) %>%
   group_by(cell.id, time.step) %>% # 
   mutate(obs = paste0("obs_", row_number())) %>% # J <- length(unique(data_select$obs))
   ungroup() %>%
-  select(time.step, cell.id, date.time, obs, presence, water, dist.0, hive.removed) 
+  select(time.step, cell.id, date.time, obs, presence, water, flowering, dist.0, hive.removed) 
 
 # define dimensions for data objects
 TT <- length(unique(data_select$time.step)) # number of primary time periods
@@ -88,14 +96,14 @@ for (vv in var.vec){ # for each variable
 # second dimension corresponding to primary time period, and third dimension corresponding to replicate.
 
 dc <- data_select %>%
-  select(cell.id, time.step, date.time, water) %>%
+  select(cell.id, time.step, date.time, water, flowering) %>%
   mutate(doy = yday(date.time), # day of year in radians
          doy.rad = doy/365*2*pi,
          sin.doy = sin(doy.rad), # sine and cosine for mean date in a cell/time.step
          cos.doy = cos(doy.rad))
 
 
-var.vec <- c("sin.doy", "cos.doy", "water")
+var.vec <- c("sin.doy", "cos.doy", "water", "flowering")
 det.var <- vector(mode = "list", length = length(var.vec))
 names(det.var) <- var.vec
 
@@ -139,7 +147,7 @@ occ.data <- list(y = y, occ.covs = occ.var, det.covs = det.var, coords = coords)
 
 
 ms.so.fit <- stPGOcc(occ.formula = ~1, 
-                     det.formula = ~1 + water + sin.doy + cos.doy, 
+                     det.formula = ~1 + water + flowering + sin.doy + cos.doy, 
                      data = occ.data, 
                      cov.model = "exponential", 
                      NNGP = TRUE, 
