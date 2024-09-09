@@ -65,6 +65,9 @@ df <- df %>%
          slope.orientation = SlopeOrientation,
          temperatue = Temperature,
          Notes,
+         WaterForagingValue,
+         HazardTypeValue,
+         HostOther,
          hive.removed,
          presence, 
          abundance = AbundanceValue) %>%
@@ -81,7 +84,14 @@ df$dist.0 <- as.numeric(st_distance(earliest_record, df))/1000 # in kms
 # make other useful covariates
 df <- mutate(df, 
              time.0 = (date.time-earliest_record$date.time)/(60*60*24), # time since incursion detected
-             water = ifelse(grepl("water", Notes, ignore.case = TRUE), 1, 0)) %>% #water around?
-  select(-Notes)
+             water = ifelse(grepl("water", Notes, ignore.case = TRUE) | 
+                              grepl("water", WaterForagingValue, ignore.case = TRUE) |
+                              grepl("water", HazardTypeValue, ignore.case = TRUE) |
+                              grepl("water", HostOther, ignore.case = TRUE), 1, 0),
+             flowering = ifelse(grepl("Fully Flowering", host.flower) | 
+                                  grepl("Partially Flowering", host.flower), 1, 0)) %>% #water around?
+  select(-Notes, -WaterForagingValue,
+         -HazardTypeValue,
+         -HostOther, -host.flower)
 
 rm(cny.detected, earliest_record, coltypes)
