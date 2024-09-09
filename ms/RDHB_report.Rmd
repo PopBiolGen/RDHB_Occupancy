@@ -1,0 +1,103 @@
+---
+title: "RDHB Occupancy"
+output: html_notebook
+author: "Ben Phillips"
+---
+
+```{r, echo=FALSE, warning=FALSE}
+setwd("..")
+source("src/b-data-organisation.R")
+```
+
+
+A quick report on occupancy analyses.
+
+This is for the data current to `r format(max(df$date.time), "%d-%m-%Y")`.
+
+## The data
+
+We have a total of `r nrow(df)` observations in which RDHB has been recorded as either present or absent.
+
+The survey effort has changed over time, ramping up in recent months.
+
+```{r surveyEffort, echo = FALSE}
+knitr::include_graphics("../out/effort-date.png")
+```
+
+As well as detection of bees, we also have a smaller dataset on the detection (and removal) of colonies.  If eradication is progressing well, we should see a negative relationship between catch (of colonies) per unit effort against the cumulative number of colonies removed.  Happily, we see this pattern in the data.
+
+```{r cpue, echo = FALSE}
+knitr::include_graphics("../out/cpue-cumulative-removals.png")
+```
+
+This tells us that (assuming detection has remained about the same) there are fewer colonies now than when the response first started.  A good sign.
+
+## Occupancy model description
+
+To fit occupancy models, I first aggregate the data according to a spatial grid, and time step equal to one calendar month.  All analyses assume that there is closure of the population in each grid cell within each time step.  Here, 'closure' simply means that a cell is either occupied, or not, within the time period and that this population state does not change within the time period.
+
+For each cell at each month, then, we have a number of observations recording the presence/absence of RDHB.
+
+There are a large range of potential occupancy models that might be fit to the data.  For now, the most sensible one is a model in which:
+
+ - detection varies over the year in a cyclical manner, and according to whether or not water was present at the observation site.  
+ - initial occupancy is assumed to be highest close to the first record of RDHB, and decline with distance from this initial record
+ - subsequent occupancy varies through time and space according to an autocorrelation model in which the best predictor of occupancy in a cell is the occupancy state of nearby cells, and the best predictor of occupancy in the next time step is occupancy at the current time step.
+ 
+ The autocorrelation model is a bit tricky to understand, but in the absence of strong predictors of occupancy, it provides a sensible natural way for occupancy to vary through time and space.  It will, however, underestimate long-distance dispersal events, and may take some convincing that eradication within a cell has happened.
+ 
+# Model results
+
+The latest prediction for occupancy is shown on the below map.
+
+```{r latestMap, echo = FALSE}
+knitr::include_graphics("../out/multi-season-spatial-occupancy.png")
+```
+Note that there are unsampled cells.  The model can predict to these cells, but will give predictions close to the values in surrounding cells.   
+
+
+Occupancy over time is shown in the time series below.  It indicates that occupancy has declined over time. This result is consistent with the catch-per-unit-effort result we saw earlier.  This suggests that current surveillance and eradication efforts may be working to hold and reduce the extent of the invasion.
+
+```{r occTime, echo = FALSE}
+knitr::include_graphics("../out/multi-season-spatial-occupancy-mean-occ-over-time.png")
+```
+
+Detection probability is the probability of detection given that the species is actually present in the grid cell at the time.  The model accounts for the situation of surveys undertaken in places where there are no bees to detect.  
+
+There is a strong effect of water on detection probability, a strong effect of flowering, and a strong effect of season.  The below plot shows the effect of both water, flowering, and day of year (1 = January 1st) on detection.  
+
+```{r detTime, echo = FALSE}
+knitr::include_graphics("../out/multi-season-spatial-occupancy-detection-over-time.png")
+```
+
+To give you a sense of what this means for survey effort, here is a plot of cumulative probability of detection for increasing number of (independent) surveys, assuming various detection probabilities.
+
+```{r cumulativeDetection, echo = FALSE}
+dp <- seq(0.1, 0.5, 0.05)
+cum.dp <- function(x, dp){
+  1-(1-dp)^x
+}
+plot.d <- c()
+x <- 0:50 # number of samples
+for (dd in 1:length(dp)){
+  temp <- data.frame(x = x, dp = rep(dp[dd], length(x)), cdp = cum.dp(x, dp[dd]))
+  plot.d <- rbind(plot.d, temp)
+}
+p <- ggplot(data = plot.d, aes(x = x, group = dp)) +
+  geom_line(aes(y = cdp, col = dp)) +
+  labs(x = "Number of independent observations", 
+       y = "Cumulative probability of detection",
+       col = "Per-survey detection probability") +
+  theme_bw()
+p
+```
+
+The next figure shows an estimate of how spatial correlation decays with distance.  This plot gives us a sense of how far away we need to go before we are measuring an 'independent' population.  That is, information we have about the presence of bees here gives us some information about whether there will also be bees 1km away, but is of no use in predicting the presence of bees 5km away.
+
+```{r corDist, echo = FALSE}
+knitr::include_graphics("../out/multi-season-spatial-occupancy-correlation-over-distance.png")
+```
+
+## What next?
+
+Next step is to build a dynamic occupancy model that describes the invasion process a little more mechanistically.  There is no package that has such a model that can be fit out of the box, so I will need to build it from scratch, which will take a while.

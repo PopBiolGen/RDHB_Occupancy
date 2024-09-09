@@ -52,7 +52,7 @@ rsconnect/
 out/
 
 # Manuscript folder
-ms/
+ms/*.html
 
 # Mac stuff
 .DS_Store
