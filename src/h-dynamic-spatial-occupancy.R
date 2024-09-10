@@ -42,3 +42,27 @@ a <- jags.model(file = "src/model-files/invasion-occ_RDHB_JAGS.txt",
                 data = data.list, 
                 inits = init.list,
                 n.chains = 3)
+
+update(a, n.iter = 5000) # burn in
+b<-coda.samples(a, 
+                variable.names = c("rho.int",
+                                   "rho.b",
+                                   "det.int", 
+                                   "det.b1", 
+                                   "det.b2",
+                                   "det.b3",
+                                   "det.b4",
+                                   "col.int",
+                                   "col.b",
+                                   "ext.int",
+                                   "ext.b",
+                                   "k"), 
+                n.iter = 10000, 
+                thin = 5)
+
+gelman.diag(b)
+
+
+summary(b)
+
+save(a, b, file = "out/dynamic-spatial-occupancy_RCHB_Coda.RData")

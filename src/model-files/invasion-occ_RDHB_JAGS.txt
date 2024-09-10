@@ -13,7 +13,6 @@ model{
   det.b3 ~ dnorm(0, 1/4)
   det.b4 ~ dnorm(0, 1/4)
   k ~ dunif(0.1, 1) # rate of spatial decay
-  un.t ~ dpois(15) # number of months prior to first detection
   
   ### process model
   ## initial occupied cells (immediately prior to observations)
