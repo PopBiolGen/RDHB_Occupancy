@@ -34,6 +34,8 @@ TT <- length(unique(data_select$time.step)) # number of primary time periods
 JJ <- length(unique(data_select$cell.id)) # number of sites
 KK <- length(unique(data_select$obs)) # maximum number of replicates at a site
 
+init.dist <- tapply(data_select$dist.0, INDEX = data_select$cell.id, FUN = mean)
+
 # y is a three-dimensional array with first dimension equal to the number of sites (J), 
 # second dimension equal to the maximum number of primary time periods (i.e., years or seasons), and 
 # third dimension equal to the maximum number of replicates at a given site.
@@ -70,7 +72,7 @@ n.obs.jj.tt <- apply(y, MARGIN = c(1, 2), FUN = function(x){sum(!is.na(x))})
 ev <- data_select %>%
   group_by(cell.id, time.step) %>%
   summarise(hive.removed = sum(hive.removed, na.rm = TRUE)) %>%
-  ungroup()
+  ungroup() 
 
 
 # makes an empty list given a set of variable names
@@ -83,7 +85,7 @@ make_var_list <- function(varnames){
 ext.var <- make_var_list("hive.removed")
 
 # organises variables names in v.list into a list each with JJ x TT (optional x KK) array of data
-extract_vars <- function(df, v.list, obs.level = FALSE){
+extract_vars <- function(df, v.list, obs.level = FALSE, fill.zeros = FALSE){
   for (vv in names(v.list)){
     if (obs.level){
       da <- array(dim = c(JJ, TT, KK)) # empty array to take one covariate
@@ -95,7 +97,11 @@ extract_vars <- function(df, v.list, obs.level = FALSE){
         select(time.step, {vv})
       for (tt in 1:TT){ # each primary time period
         temp.vec <- temp[[vv]][temp$time.step == tt]
-        if (length(temp.vec) == 0) next
+        if (length(temp.vec) == 0) {
+          if (fill.zeros) {
+            temp.vec <- 0
+          } else next
+        }
         if (obs.level){
           da[jj, tt, 1:length(temp.vec)] <- temp.vec
         } else {
@@ -109,7 +115,7 @@ extract_vars <- function(df, v.list, obs.level = FALSE){
   v.list
 }
 
-ext.var <- extract_vars(ev, ext.var)
+ext.var <- extract_vars(ev, ext.var, fill.zeros = TRUE)
 rm(ev)
 
 # Similarly, det.vars is a list of variables included in the detection portion of the model, 
