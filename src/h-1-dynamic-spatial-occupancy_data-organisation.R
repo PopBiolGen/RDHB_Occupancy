@@ -1,4 +1,5 @@
 # Get the data
+current.data <- "RDHBSurveillance_2024-09-09.xlsx"
 source("src/b-data-organisation.R")
 
 ##### Organise data #####
@@ -53,34 +54,63 @@ for (jj in 1:JJ){ #for each cell
 
 rm(pa)
 
-# occ.covs is a list of variables included in the occurrence portion of the model. 
-# Each list element is a different occurrence covariate, which can be site level or site/primary time period level. 
-# Site-level covariates are specified as a vector of length J while 
+# observed presence/absence at time within primary period (for indexing in JAGS)
+n.obs.jj.tt <- apply(y, MARGIN = c(1, 2), FUN = function(x){sum(!is.na(x))})
+
+# col.var is a J x nVars matrix of variables included in the colonisation portion of the model. 
+# Each list element is a different colonisation covariate, which is recorded at site level. 
+# Site-level covariates are specified as a vector of length J
+
+# col.var is currently not used
+
+# ext.var is a list of variables included in the extinction portion of the model. 
+# Each list element is a different extinction covariate, which is at site-primary time period level. 
 # site/primary time period level covariates are specified as a matrix 
 #with rows corresponding to sites and columns correspond to primary time periods.
-
-oc <- data_select %>%
-  select(cell.id, time.step, dist.0) %>%
+ev <- data_select %>%
   group_by(cell.id, time.step) %>%
-  summarise(mean.dist = mean(dist.0, na.rm = TRUE)) %>%
+  summarise(hive.removed = sum(hive.removed, na.rm = TRUE)) %>%
   ungroup()
 
 
-var.vec <- c("mean.dist")
-occ.var <- vector(mode = "list", length = length(var.vec))
-names(occ.var) <- var.vec
-
-for (vv in var.vec){ # for each variable
-  occ.covs.i <- matrix(nrow = JJ, ncol = TT) # empty matrix to take one covariate
-  for (jj in 1:JJ){ # for each cell
-    temp <- filter(oc, cell.id == cell[jj]) %>%
-      select(time.step, {vv})
-    if (length(temp) == 0) next
-    #occ.covs.i[jj, temp$time.step] <- as.vector(temp[,vv])
-  }
-  occ.var[[vv]] <- occ.covs.i
+# makes an empty list given a set of variable names
+make_var_list <- function(varnames){
+  vl <- vector(mode = "list", length = length(varnames))
+  names(vl) <- varnames
+  vl
 }
 
+ext.var <- make_var_list("hive.removed")
+
+# organises variables names in v.list into a list each with JJ x TT x KK matrix of data
+extract_vars <- function(df, v.list, obs.level = FALSE){
+  for (vv in names(v.list)){
+    if (obs.level){
+      da <- array(dim = c(JJ, TT, KK)) # empty array to take one covariate
+    } else {
+      da <- array(dim = c(JJ, TT)) # empty array to take one covariate
+    }
+    for (jj in 1:JJ){ # for each cell
+      temp <- filter(df, cell.id == cell[jj]) %>%
+        select(time.step, {vv})
+      for (tt in 1:TT){ # each primary time period
+        temp.vec <- temp[[vv]][temp$time.step == tt]
+        if (length(temp.vec) == 0) next
+        if (obs.level){
+          da[jj, tt, 1:length(temp.vec)] <- temp.vec
+        } else {
+          da[jj, tt] <- temp.vec
+        }
+        
+      }
+    }
+    v.list[[vv]] <- da
+  }
+  v.list
+}
+
+ext.var <- extract_vars(ev, ext.var)
+rm(ev)
 
 # Similarly, det.covs is a list of variables included in the detection portion of the model, 
 # with each list element corresponding to an individual variable. 
@@ -96,24 +126,9 @@ dc <- data_select %>%
          sin.doy = sin(doy.rad), # sine and cosine for mean date in a cell/time.step
          cos.doy = cos(doy.rad))
 
+det.var <- make_var_list(c("sin.doy", "cos.doy", "water", "flowering")) 
 
-var.vec <- c("sin.doy", "cos.doy", "water", "flowering")
-det.var <- vector(mode = "list", length = length(var.vec))
-names(det.var) <- var.vec
-
-for (vv in var.vec){ # for each variable
-  da <- array(dim = c(JJ, TT, KK)) # empty array to take one covariate
-  for (jj in 1:JJ){ # for each cell
-    temp <- filter(dc, cell.id == cell[jj]) %>%
-      select(time.step, {vv})
-    for (tt in 1:TT){ # each primary time period
-      temp.vec <- temp[[vv]][temp$time.step == tt]
-      if (length(temp.vec) == 0) next
-      da[jj, tt, 1:length(temp.vec)] <- temp.vec
-    }
-  }
-  det.var[[vv]] <- da
-}
+det.var <- extract_vars(dc, det.var, obs.level = TRUE)
 
 
 # coords is a matrix of the observation coordinates used to estimate the spatial random effect for each site. 
