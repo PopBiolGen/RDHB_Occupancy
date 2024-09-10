@@ -17,8 +17,10 @@ assign_list <- function(ls, prefix){
 assign_list(det.var, "det")
 assign_list(ext.var, "ext")
 
+
 # Data list
-data.list <- list(ext.x1 = ext.x1,
+data.list <- list(init.dist = init.dist,
+                  ext.x1 = ext.x1,
                   det.x1 = det.x1,
                   det.x2 = det.x2,
                   det.x3 = det.x3,
@@ -33,5 +35,10 @@ data.list <- list(ext.x1 = ext.x1,
 occ.init <- apply(y, MARGIN = c(1, 2), FUN = sum, na.rm = TRUE) > 0
 occ.init <- occ.init+0
 
-init.list <- list(y = occ.init)
+init.list <- list(occ = cbind(rep(1, JJ),occ.init))
 
+# the model
+a <- jags.model(file = "src/model-files/invasion-occ_RDHB_JAGS.txt", 
+                data = data.list, 
+                inits = init.list,
+                n.chains = 3)

@@ -1,6 +1,8 @@
-# Spatial occupancy model in JAGS
+# Spatial dynamic occupancy model in JAGS
 model{
   # priors
+  rho.int ~ dnorm(0, 1/4) # initial occupancy
+  rho.b ~ dnorm(0, 1/4)
   col.int ~ dnorm(-5, 1/4)
   col.b ~ dnorm(0, 1/36) # colonisation coefficients (intercept and immigration)
   ext.int ~ dnorm(-5, 1/9)
@@ -8,23 +10,32 @@ model{
   det.int ~ dnorm(0, 1/4)
   det.b1 ~ dnorm(0, 1/4)
   det.b2 ~ dnorm(0, 1/4)
+  det.b3 ~ dnorm(0, 1/4)
+  det.b4 ~ dnorm(0, 1/4)
   k ~ dunif(0.1, 1) # rate of spatial decay
+  un.t ~ dpois(15) # number of months prior to first detection
   
   ### process model
-  ## state variable over time
-  occ[1:JJ,1] <- init.state # initial state
+  ## initial occupied cells (immediately prior to observations)
+  for (jj in 1:JJ){
+    logit(rho[jj]) <- rho.int + rho.b*init.dist[jj]
+    occ[jj, 1] ~ dbern(rho[jj])
+  }
+  
   # spatial decay
   for (jj in 1:JJ){
     for (ii in 1:JJ){
        decay.jj.ii[jj, ii] <- exp(-k*dist.mat[jj,ii])
     }
   }
-  # Occupancy over time
+  
+  ## state variable over time
+  # dynamics prior to and after observation
   for (tt in 2:(TT+1)){
     for (jj in 1:JJ){
         sp.jj.tt[jj, tt] <- sum(decay.jj.ii[jj, 1:JJ]*occ[1:JJ, tt-1]) # spatial colonisation effect
         logit(p.col[jj, tt]) <- col.int + col.b*sp.jj.tt[jj, tt]
-        logit(p.ext[jj, tt]) <- ext.int + ext.b*ext.var[jj]
+        logit(p.ext[jj, tt]) <- ext.int + ext.b*ext.x1[jj, tt-1]
         ext.col[jj, tt] <- (1-occ[jj,tt-1])*p.col[jj, tt] + 
           occ[jj, tt-1]*(1-p.ext[jj, tt])
         occ[jj,tt] ~ dbern(ext.col[jj, tt])
@@ -35,7 +46,11 @@ model{
   for (tt in 1:TT){
     for (jj in 1:JJ){
       for (kk in 1:n.obs.jj.tt[jj, tt]){
-        logit(p.obs[jj, tt, kk]) <- det.int + det.b1*det.x1[jj, tt, kk] + det.b2*det.x2[jj, tt, kk]
+        logit(p.obs[jj, tt, kk]) <- det.int + 
+          det.b1*det.x1[jj, tt, kk] + 
+          det.b2*det.x2[jj, tt, kk] +
+          det.b3*det.x3[jj, tt, kk] +
+          det.b4*det.x4[jj, tt, kk]
     obs[jj, tt, kk] ~ dbern(p.obs[jj, tt, kk]*occ[jj, tt+1])
       }
     }
