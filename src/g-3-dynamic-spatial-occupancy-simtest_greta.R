@@ -2,7 +2,9 @@
 # is a function of number of occupancies in surrounding cells (i.e., spatially explicit)
 
 # use data structures of SpOccupancy, which are considerably nicer than those of unmarked.
-#library(greta.dynamics)
+
+# Here we use Greta
+library(greta)
 
 # simulate some data
 source("src/g-2-simulate-dynamic-occupancy.R")
@@ -89,3 +91,5 @@ o.mod <- model(occ.state, col.int, col.b, ext.int, ext.b, det.int, det.b1, det.b
 draws <- mcmc(model = o.mod, n_cores = 2)
 
 summary(draws)
+
+save(draws, file = "out/greta_coda_simtest.RData")

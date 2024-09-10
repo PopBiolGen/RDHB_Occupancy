@@ -1,5 +1,3 @@
-library(greta)
-
 ##### functions #####
 # spatial decay in occupancy with distance, d
 decay <- function(d, k){
