@@ -1,0 +1,43 @@
+# Spatial occupancy model in JAGS
+model{
+  # priors
+  col.int ~ dnorm(-5, 1/4)
+  col.b ~ dnorm(0, 1/36) # colonisation coefficients (intercept and immigration)
+  ext.int ~ dnorm(-5, 1/9)
+  ext.b ~ dnorm(0, 1/4) # extinction coefficients (intercept and control effort)
+  det.int ~ dnorm(0, 1/4)
+  det.b1 ~ dnorm(0, 1/4)
+  det.b2 ~ dnorm(0, 1/4)
+  k ~ dunif(0.1, 1) # rate of spatial decay
+  
+  ### process model
+  ## state variable over time
+  occ[1:JJ,1] <- init.state # initial state
+  # spatial decay
+  for (jj in 1:JJ){
+    for (ii in 1:JJ){
+       decay.jj.ii[jj, ii] <- exp(-k*dist.mat[jj,ii])
+    }
+  }
+  # Occupancy over time
+  for (tt in 2:(TT+1)){
+    for (jj in 1:JJ){
+        sp.jj.tt[jj, tt] <- sum(decay.jj.ii[jj, 1:JJ]*occ[1:JJ, tt-1]) # spatial colonisation effect
+        logit(p.col[jj, tt]) <- col.int + col.b*sp.jj.tt[jj, tt]
+        logit(p.ext[jj, tt]) <- ext.int + ext.b*ext.var[jj]
+        ext.col[jj, tt] <- (1-occ[jj,tt-1])*p.col[jj, tt] + 
+          occ[jj, tt-1]*(1-p.ext[jj, tt])
+        occ[jj,tt] ~ dbern(ext.col[jj, tt])
+    }
+  }
+  
+  # observation model
+  for (tt in 1:TT){
+    for (jj in 1:JJ){
+      for (kk in 1:n.obs.jj.tt[jj, tt]){
+        logit(p.obs[jj, tt, kk]) <- det.int + det.b1*det.x1[jj, tt, kk] + det.b2*det.x2[jj, tt, kk]
+    obs[jj, tt, kk] ~ dbern(p.obs[jj, tt, kk]*occ[jj, tt+1])
+      }
+    }
+  }
+}  
