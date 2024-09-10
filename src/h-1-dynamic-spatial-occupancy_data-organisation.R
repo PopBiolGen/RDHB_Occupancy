@@ -82,7 +82,7 @@ make_var_list <- function(varnames){
 
 ext.var <- make_var_list("hive.removed")
 
-# organises variables names in v.list into a list each with JJ x TT x KK matrix of data
+# organises variables names in v.list into a list each with JJ x TT (optional x KK) array of data
 extract_vars <- function(df, v.list, obs.level = FALSE){
   for (vv in names(v.list)){
     if (obs.level){
@@ -112,7 +112,7 @@ extract_vars <- function(df, v.list, obs.level = FALSE){
 ext.var <- extract_vars(ev, ext.var)
 rm(ev)
 
-# Similarly, det.covs is a list of variables included in the detection portion of the model, 
+# Similarly, det.vars is a list of variables included in the detection portion of the model, 
 # with each list element corresponding to an individual variable. 
 # In addition to site-level and/or site/primary time period-level, 
 # detection covariates can also be observational-level. Observation-level covariates are specified 
@@ -131,26 +131,9 @@ det.var <- make_var_list(c("sin.doy", "cos.doy", "water", "flowering"))
 det.var <- extract_vars(dc, det.var, obs.level = TRUE)
 
 
-# coords is a matrix of the observation coordinates used to estimate the spatial random effect for each site. 
-# coords has two columns for the easting and northing coordinate, respectively. 
-# Typically, each site in the data set will have it's own coordinate, such that coords is a 
-# J×2 matrix and grid.index should not be specified. 
-# If you desire to estimate spatial random effects at some larger spatial level, 
-# e.g., if points fall within grid cells and you want to estimate a spatial random effect for each grid cell instead of each point,
-# coords can be specified as the coordinate for each grid cell. 
-# In such a case, grid.index is an indexing vector of length J, 
-# where each value of grid.index indicates the corresponding row in coords that the given site corresponds to. 
-# Note that spOccupancy assumes coordinates are specified in a projected coordinate system.
+# coords to get dist.mat
 coords <- select(agg_data$df_grid, geometry, cell.id) %>%
   st_transform(crs = 3577) %>% # transform to albers
-  arrange(cell.id) %>%
-  mutate(centroid = st_centroid(geometry),
-         easting = st_coordinates(centroid)[,1],
-         northing = st_coordinates(centroid)[,2]) %>%
-  select(easting, northing) %>%
-  st_drop_geometry() %>%
-  as.matrix()
+  arrange(cell.id) 
 
-
-occ.data <- list(y = y, occ.covs = occ.var, det.covs = det.var, coords = coords)
-
+dist.mat <- as.matrix(dist(coords, diag = TRUE, upper = TRUE))
