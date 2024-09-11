@@ -1,5 +1,6 @@
 # Get the data
 current.data <- "RDHBSurveillance_2024-09-09.xlsx"
+max.obs.jj.tt <- 50 # maximum number of (non hive removal) observations per site/time to allow in the data
 source("src/b-data-organisation.R")
 
 ##### Organise data #####
@@ -25,8 +26,9 @@ data_select <- select(agg_data.ng$df,
                       hive.removed) %>%
   arrange(cell.id, date.time) %>%
   group_by(cell.id, time.step) %>% # 
-  mutate(obs = paste0("obs_", row_number())) %>% # J <- length(unique(data_select$obs))
+  mutate(obs.num = row_number(), obs = paste0("obs_", obs.num)) %>% # J <- length(unique(data_select$obs))
   ungroup() %>%
+  filter(obs.num < max.obs.jj.tt | hive.removed > 0) %>% # set a maximum number of observations per site.time
   select(time.step, cell.id, date.time, obs, presence, water, flowering, dist.0, hive.removed) 
 
 # define dimensions for data objects
