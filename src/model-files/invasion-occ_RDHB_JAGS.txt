@@ -54,4 +54,10 @@ model{
       }
     }
   }
+  
+  # derived variables
+  # occupancy over time
+  for (tt in 1:TT){
+    o.t[tt] <- sum(occ[1:JJ,tt])
+  }
 }  

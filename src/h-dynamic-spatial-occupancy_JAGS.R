@@ -56,7 +56,8 @@ b<-coda.samples(a,
                                    "col.b",
                                    "ext.int",
                                    "ext.b",
-                                   "k"), 
+                                   "k",
+                                   "o.t"), 
                 n.iter = 10000, 
                 thin = 5)
 
@@ -65,4 +66,4 @@ gelman.diag(b)
 
 summary(b)
 
-save(a, b, file = "out/dynamic-spatial-occupancy_RCHB_Coda.RData")
+save(a, b, file = "out/dynamic-spatial-occupancy_RDHB_Coda.RData")
