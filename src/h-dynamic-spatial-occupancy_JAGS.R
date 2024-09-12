@@ -17,7 +17,6 @@ assign_list <- function(ls, prefix){
 assign_list(det.var, "det")
 assign_list(ext.var, "ext")
 
-
 # Data list
 data.list <- list(init.dist = init.dist,
                   ext.x1 = ext.x1,
@@ -25,10 +24,11 @@ data.list <- list(init.dist = init.dist,
                   det.x2 = det.x2,
                   det.x3 = det.x3,
                   det.x4 = det.x4,
-                  n.obs.jj.tt = n.obs.jj.tt,
                   obs = y,
+                  y.real = (y.real - 1), # setup for use with JAGS step function
                   JJ = JJ,
                   TT = TT,
+                  KK = KK,
                   dist.mat = dist.mat)
 
 # initials

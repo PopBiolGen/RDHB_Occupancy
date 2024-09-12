@@ -58,8 +58,10 @@ for (jj in 1:JJ){ #for each cell
 
 rm(pa)
 
-# observed presence/absence at time within primary period (for indexing in JAGS)
-n.obs.jj.tt <- apply(y, MARGIN = c(1, 2), FUN = function(x){sum(!is.na(x))})
+# for handling NAs in the data
+y.zero.pad <- y
+y.real <- !is.na(y.zero.pad) 
+y.zero.pad[!y.real] <- 0 # add fake observations to sidestep the NA issue (switched off in JAGS)
 
 # col.var is a J x nVars matrix of variables included in the colonisation portion of the model. 
 # Each list element is a different colonisation covariate, which is recorded at site level. 
@@ -105,7 +107,12 @@ extract_vars <- function(df, v.list, obs.level = FALSE, fill.zeros = FALSE){
           } else next
         }
         if (obs.level){
-          da[jj, tt, 1:length(temp.vec)] <- temp.vec
+          if (fill.zeros){
+            da[jj, tt, ] <- c(temp.vec, rep(0, KK-length(temp.vec))) # pad with zeros
+          } else {
+            da[jj, tt, 1:length(temp.vec)] <- temp.vec  # else leave NAs
+          }
+          
         } else {
           da[jj, tt] <- temp.vec
         }
@@ -117,7 +124,7 @@ extract_vars <- function(df, v.list, obs.level = FALSE, fill.zeros = FALSE){
   v.list
 }
 
-ext.var <- extract_vars(ev, ext.var, fill.zeros = TRUE)
+ext.var <- extract_vars(ev, ext.var, fill.zeros = TRUE) # zeros here are actually true zeros
 rm(ev)
 
 # Similarly, det.vars is a list of variables included in the detection portion of the model, 
@@ -136,7 +143,7 @@ dc <- data_select %>%
 
 det.var <- make_var_list(c("sin.doy", "cos.doy", "water", "flowering")) 
 
-det.var <- extract_vars(dc, det.var, obs.level = TRUE)
+det.var <- extract_vars(dc, det.var, obs.level = TRUE, fill.zeros = TRUE) # zeros here are bypassed with step in JAGS
 
 
 # coords to get dist.mat
