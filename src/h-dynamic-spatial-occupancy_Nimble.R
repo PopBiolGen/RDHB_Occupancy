@@ -127,7 +127,7 @@ a <- nimbleMCMC(code = dso.code,
                 nburnin = nb, 
                 nchains = nc)
 
-coda:gelman.diag(a)
+#coda::gelman.diag(a)
 summary(a)
 
 
