@@ -58,11 +58,17 @@ dso.code <- nimbleCode(
             det.b2*det.x2[jj, tt, kk] +
             det.b3*det.x3[jj, tt, kk] +
             det.b4*det.x4[jj, tt, kk]
-          obs[jj, tt, kk] ~ dbern(p.obs[jj, tt, kk]*occ[jj, tt+1])
+          obs[jj, tt, kk] ~ dbern(p.obs[jj, tt, kk]*occ[jj, tt+1]*step(y.real[jj, tt, kk]))
         }
       }
     }
-  }
+    
+    # derived variables
+    # occupancy over time
+    for (tt in 1:TT){
+      o.t[tt] <- sum(occ[1:JJ,tt])
+    }
+  }  
 )
 
 # arrange the data for Nimble
@@ -85,8 +91,8 @@ data.list <- list(init.dist = init.dist,
                   det.x2 = det.x2,
                   det.x3 = det.x3,
                   det.x4 = det.x4,
-                  n.obs.jj.tt = n.obs.jj.tt,
                   obs = y,
+                  y.real = (y.real - 1), # setup for use with JAGS step function
                   JJ = JJ,
                   TT = TT,
                   KK = KK,
@@ -111,15 +117,16 @@ params <- c("rho.int",
                    "col.b",
                    "ext.int",
                    "ext.b",
-                   "k")
+                   "k",
+                   "o.t")
 
 # mcmc settings
-nb <- 10
-ni <- 10
+nb <- 3000
+ni <- 1000
 nc = 3
 
 # the model
-a <- nimbleMCMC(code = dso.code, 
+a.n <- nimbleMCMC(code = dso.code, 
                 init = init.list, 
                 monitors = params, 
                 constants = data.list, 
@@ -127,8 +134,10 @@ a <- nimbleMCMC(code = dso.code,
                 nburnin = nb, 
                 nchains = nc)
 
-#coda::gelman.diag(a)
-summary(a)
+coda::gelman.diag(a.n)
+summary(a.n)
+
+save(a.n, file = "out/dynamic-spatial-occupancy_RDHB_Nimble_Coda.RData")
 
 
 
