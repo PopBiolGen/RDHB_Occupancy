@@ -25,15 +25,24 @@ init.state[init.cell] <- 1
 n.obs.jj.tt <- apply(obs.array, MARGIN = c(1, 2), FUN = function(x){sum(!is.na(x))})
 n.obs.total <- sum(n.obs.jj.tt)
 
+obs.array.zero.pad <- obs.array
+obs.array.real <- !is.na(obs.array.zero.pad) 
+obs.array.zero.pad[!obs.array.real] <- 0 # add fake observations to sidestep the NA issue
+obs.array.real <- obs.array.real - 1 # setup for use with JAGS step function
+
+# these zeros are obviated in the JAGS script
+
+
 # Data list
 data.list <- list(ext.var = ext.var,
                  det.x1 = det.x1,
                  det.x2 = det.x2,
                  init.state = init.state,
-                 n.obs.jj.tt = n.obs.jj.tt,
-                 obs = obs.array,
+                 obs = obs.array.zero.pad,
+                 obs.real = obs.array.real,
                  JJ = JJ,
                  TT = TT,
+                 KK = KK,
                  dist.mat = dist.mat)
 
 occ.init <- apply(obs.array, MARGIN = c(1, 2), FUN = sum, na.rm = TRUE) > 0

@@ -34,9 +34,9 @@ model{
   # observation model
   for (tt in 1:TT){
     for (jj in 1:JJ){
-      for (kk in 1:n.obs.jj.tt[jj, tt]){
+      for (kk in 1:KK){
         logit(p.obs[jj, tt, kk]) <- det.int + det.b1*det.x1[jj, tt, kk] + det.b2*det.x2[jj, tt, kk]
-    obs[jj, tt, kk] ~ dbern(p.obs[jj, tt, kk]*occ[jj, tt+1])
+    obs[jj, tt, kk] ~ dbern(p.obs[jj, tt, kk]*occ[jj, tt+1]*step(obs.real[jj ,tt, kk]))
       }
     }
   }
