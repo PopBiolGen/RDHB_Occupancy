@@ -78,4 +78,4 @@ gelman.diag(b)
 
 summary(b)
 
-save(b, "out/simtest.RData")
+save(b, file = "out/simtest.RData")
