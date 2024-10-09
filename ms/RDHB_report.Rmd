@@ -48,12 +48,19 @@ There are a large range of potential occupancy models that might be fit to the d
  
 # Model results
 
-The latest prediction for occupancy is shown on the below map.
+The model predictions over the full response are shown in the animation below.
+
+```{r occupancyAnimate, echo = FALSE}
+knitr::include_graphics("../out/multi-season-spatial-occupancy_animation.gif")
+```
+
+
+The predictions for occupancy in the last month are shown on the below map.
 
 ```{r latestMap, echo = FALSE}
 knitr::include_graphics("../out/multi-season-spatial-occupancy.png")
 ```
-Note that there are unsampled cells.  The model can predict to these cells, but will give predictions close to the values in surrounding cells.   
+Note that there are unsampled cells.  The model can predict to these cells, but will give predictions close to the values in surrounding cells. It is probably better to show as is to reveal gaps in the spatial coverage.  
 
 
 Occupancy over time is shown in the time series below.  It indicates that occupancy has declined over time. This result is consistent with the catch-per-unit-effort result we saw earlier.  This suggests that current surveillance and eradication efforts may be working to hold and reduce the extent of the invasion.

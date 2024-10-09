@@ -11,7 +11,7 @@ coltypes <- c("numeric", "numeric", "numeric", "text",
               "text", "numeric", "numeric", "numeric", "numeric", "text", "numeric", "text", "numeric", 
               "text", "text", "text", "text", "text", "numeric", 
               "numeric", "numeric", "text", "text", "text", "text", "text", "text", "text", 
-              "text", "text", "text")
+              "text", "text", "text", "numeric", "text")
 
 df <- read_xlsx(path = file.path(data_dir, current.data), 
                 sheet = "Export",
