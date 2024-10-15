@@ -2,6 +2,7 @@
 #SBATCH --account=pawsey1103
 #SBATCH --nodes=1
 #SBATCH --ntasks=1
+#SBATCH --cpus-per-task=1
 #SBATCH --time=24:00:00
 #SBatch --mem=200G
  
