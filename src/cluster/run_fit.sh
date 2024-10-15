@@ -10,4 +10,4 @@ cd $MYSCRATCH/RDHB/RDHB_Occupancy
 
 # Run setup
 . src/cluster/a-setup-environment.sh
-Rscript Rscript src/h-dynamic-spatial-occupancy_JAGS.R
+Rscript src/h-dynamic-spatial-occupancy_JAGS.R
