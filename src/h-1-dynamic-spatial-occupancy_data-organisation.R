@@ -1,7 +1,7 @@
 # Get the data
 current.data <- "RDHBSurveillance_2024-10-09.xlsx"
-max.obs.jj.tt <- 5 # maximum number of (non hive removal) observations per site/time to allow in the data
-max.tt <- 5
+max.obs.jj.tt <- 30 # maximum number of (non hive removal) observations per site/time to allow in the data
+max.tt <- 20
 source("src/b-data-organisation.R")
 
 ##### Organise data #####
