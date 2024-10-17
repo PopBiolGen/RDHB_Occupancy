@@ -1,5 +1,6 @@
 # Get the data
 current.data <- "RDHBSurveillance_2024-10-09.xlsx"
+# these two variables to control data amounts during model development.  To be removed for full fit.
 max.obs.jj.tt <- 30 # maximum number of (non hive removal) observations per site/time to allow in the data
 max.tt <- 20
 source("src/b-data-organisation.R")
@@ -60,10 +61,13 @@ for (jj in 1:JJ){ #for each cell
 
 rm(pa)
 
+# number of observations for each tt, jj (used to trim loops in Nimble)
+n.obs.jj.tt <- apply(y, MARGIN = c(1, 2), FUN = function(x){sum(!is.na(x))})
+
 # for handling NAs in the data
 y.zero.pad <- y
 y.real <- !is.na(y.zero.pad) 
-y.zero.pad[!y.real] <- 0 # add fake observations to sidestep the NA issue (switched off in JAGS)
+y.zero.pad[!y.real] <- 0 # add fake observations to sidestep the NA issue (these are switched off in JAGS)
 
 # col.var is a J x nVars matrix of variables included in the colonisation portion of the model. 
 # Each list element is a different colonisation covariate, which is recorded at site level. 
