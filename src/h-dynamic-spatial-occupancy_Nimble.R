@@ -50,16 +50,18 @@ dso.code <- nimbleCode(
     }
     
     # observation model
-    for (tt in 1:TT){
-      for (jj in 1:JJ){
-        for (kk in 1:KK){
-          logit(p.obs[jj, tt, kk]) <- det.int + 
-            det.b1*det.x1[jj, tt, kk] + 
-            det.b2*det.x2[jj, tt, kk] +
-            det.b3*det.x3[jj, tt, kk] +
-            det.b4*det.x4[jj, tt, kk]
-          obs[jj, tt, kk] ~ dbern(p.obs[jj, tt, kk]*occ[jj, tt+1]*step(y.real[jj, tt, kk]))
-        }
+    for (jj in 1:JJ){
+      for (tt in 1:TT){
+        #if (n.obs.jj.tt[jj, tt] > 0){  # skip empty site.times
+          for (kk in 1:n.obs.jj.tt[jj, tt]){ # only calculate likelihoods where there is data
+            logit(p.obs[jj, tt, kk]) <- det.int + 
+              det.b1*det.x1[jj, tt, kk] + 
+              det.b2*det.x2[jj, tt, kk] +
+              det.b3*det.x3[jj, tt, kk] +
+              det.b4*det.x4[jj, tt, kk]
+            obs[jj, tt, kk] ~ dbern(p.obs[jj, tt, kk]*occ[jj, tt+1])
+          }
+        #}
       }
     }
     
@@ -85,18 +87,17 @@ assign_list(ext.var, "ext")
 
 
 # Data list
-data.list <- list(init.dist = init.dist,
+constant.list <- list(init.dist = init.dist,
                   ext.x1 = ext.x1,
                   det.x1 = det.x1,
                   det.x2 = det.x2,
                   det.x3 = det.x3,
                   det.x4 = det.x4,
-                  obs = y,
-                  y.real = (y.real - 1), # setup for use with JAGS step function
                   JJ = JJ,
                   TT = TT,
-                  KK = KK,
+                  n.obs.jj.tt = n.obs.jj.tt,
                   dist.mat = dist.mat)
+data.list <- list(obs = y)
 
 # initials
 occ.init <- apply(y, MARGIN = c(1, 2), FUN = sum, na.rm = TRUE) > 0
@@ -121,18 +122,21 @@ params <- c("rho.int",
                    "o.t")
 
 # mcmc settings
-nb <- 3000
-ni <- 1000
+nb <- 500
+ni <- 1200
 nc = 3
 
 # the model
 a.n <- nimbleMCMC(code = dso.code, 
                 init = init.list, 
                 monitors = params, 
-                constants = data.list, 
+                constants = constant.list,
+                data = data.list,
                 niter = ni, 
                 nburnin = nb, 
-                nchains = nc)
+                nchains = nc,
+                check = FALSE,
+                samplesAsCodaMCMC = TRUE)
 
 coda::gelman.diag(a.n)
 summary(a.n)
