@@ -5,6 +5,44 @@ library(nimble)
 # get the data and organise it
 source("src/h-1-dynamic-spatial-occupancy_data-organisation.R")
 
+# arrange the data for Nimble
+# given a list, output named objects for JAGS
+assign_list <- function(ls, prefix){
+  for (ll in 1:length(ls)){
+    assign(paste0(prefix, ".x", ll), ls[[ll]], envir = .GlobalEnv)
+  }
+}
+
+# assign out variables with standard names
+assign_list(det.var, "det")
+assign_list(ext.var, "ext")
+
+# takes an observation level array (spOccupancy format) and returns it as a vector
+obs_level_to_vector <- function(obs.level.array){
+  as.vector(obs.level.array)
+}
+
+# takes a list of observation level arrays (spOccupancy format) and returns them as a dataframe
+obs_level_to_df <- function(obs.level.array.list, na.rm = TRUE){
+  site.time.rep <- dim(obs.level.array.list[[1]]) # get dimensions
+  var.list <- lapply(obs.level.array.list, FUN = obs_level_to_vector) # throw everything into a dataframe
+  indices <- expand.grid(1:site.time.rep[1], 1:site.time.rep[2], 1:site.time.rep[3]) # make indices for site, time, rep
+  site.index <- indices[,1] # make a site index
+  time.index <- indices[,2] # make a time index
+  var.df <- as.data.frame(var.list)
+  var.df <- data.frame(site = site.index, time = time.index, var.df)
+  if (na.rm) var.df <- na.omit(var.df)
+  var.df
+}
+
+# take obs level stuff in spOccupancy format and send it back to simple vector format
+obs.lev.list <- list(obs = y, det.x1 = det.x1,
+                     det.x2 = det.x2,
+                     det.x3 = det.x3,
+                     det.x4 = det.x4)
+obs.df <- obs_level_to_df(obs.lev.list)
+
+
 # organise JAGS code into Nimble Code
 dso.code <- nimbleCode(
   {
@@ -50,20 +88,16 @@ dso.code <- nimbleCode(
     }
     
     # observation model
-    for (jj in 1:JJ){
-      for (tt in 1:TT){
-        #if (n.obs.jj.tt[jj, tt] > 0){  # skip empty site.times
-          for (kk in 1:n.obs.jj.tt[jj, tt]){ # only calculate likelihoods where there is data
-            logit(p.obs[jj, tt, kk]) <- det.int + 
-              det.b1*det.x1[jj, tt, kk] + 
-              det.b2*det.x2[jj, tt, kk] +
-              det.b3*det.x3[jj, tt, kk] +
-              det.b4*det.x4[jj, tt, kk]
-            obs[jj, tt, kk] ~ dbern(p.obs[jj, tt, kk]*occ[jj, tt+1])
-          }
-        #}
-      }
+    # only calculate likelihoods where there is data
+    logit(p.obs[1:n.obs]) <- det.int + 
+        det.b1*det.x1[1:n.obs] + 
+        det.b2*det.x2[1:n.obs] +
+        det.b3*det.x3[1:n.obs] +
+        det.b4*det.x4[1:n.obs]
+    for (nn in 1:n.obs){
+      obs[nn] ~ dbern(p.obs[nn]*occ[site[nn], time[nn]])
     }
+    
     
     # derived variables
     # occupancy over time
@@ -73,31 +107,21 @@ dso.code <- nimbleCode(
   }  
 )
 
-# arrange the data for Nimble
-# given a list, output named objects for JAGS
-assign_list <- function(ls, prefix){
-  for (ll in 1:length(ls)){
-    assign(paste0(prefix, ".x", ll), ls[[ll]], envir = .GlobalEnv)
-  }
-}
-
-# assign out variables with standard names
-assign_list(det.var, "det")
-assign_list(ext.var, "ext")
-
 
 # Data list
 constant.list <- list(init.dist = init.dist,
-                  ext.x1 = ext.x1,
-                  det.x1 = det.x1,
-                  det.x2 = det.x2,
-                  det.x3 = det.x3,
-                  det.x4 = det.x4,
                   JJ = JJ,
                   TT = TT,
-                  n.obs.jj.tt = n.obs.jj.tt,
-                  dist.mat = dist.mat)
-data.list <- list(obs = y)
+                  dist.mat = dist.mat,
+                  n.obs = nrow(obs.df),
+                  site = obs.df$site,
+                  time = obs.df$time)
+data.list <- list(obs = obs.df$obs,
+                  ext.x1 = ext.x1,
+                  det.x1 = obs.df$det.x1,
+                  det.x2 = obs.df$det.x2,
+                  det.x3 = obs.df$det.x3,
+                  det.x4 = obs.df$det.x4)
 
 # initials
 occ.init <- apply(y, MARGIN = c(1, 2), FUN = sum, na.rm = TRUE) > 0
@@ -122,8 +146,8 @@ params <- c("rho.int",
                    "o.t")
 
 # mcmc settings
-nb <- 5000
-ni <- 10000
+nb <- 500
+ni <- 1000
 nc = 3
 
 # the model
