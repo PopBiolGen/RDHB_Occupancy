@@ -1,7 +1,7 @@
 # Get the data
 current.data <- "RDHBSurveillance_2024-10-09.xlsx"
 # these two variables to control data amounts during model development.  To be removed for full fit.
-max.obs.jj.tt <- 150 # maximum number of (non hive removal) observations per site/time to allow in the data
+max.obs.jj.tt <- 30 # maximum number of (non hive removal) observations per site/time to allow in the data
 max.tt <- 20
 source("src/b-data-organisation.R")
 
