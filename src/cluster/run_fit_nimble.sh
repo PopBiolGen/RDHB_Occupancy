@@ -4,7 +4,7 @@
 #SBATCH --ntasks=1
 #SBATCH --cpus-per-task=1
 #SBATCH --time=24:00:00
-#SBatch --mem=200G
+#SBATCH --mem=100G
  
 # Project directory
 cd $MYSCRATCH/RDHB/RDHB_Occupancy
