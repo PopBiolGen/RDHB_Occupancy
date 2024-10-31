@@ -48,7 +48,7 @@ dso.code <- nimbleCode(
   {
     # priors
     rho.int ~ dnorm(0, 1/4) # initial occupancy
-    rho.b ~ dnorm(0, 1/4)
+    #rho.b ~ dnorm(0, 1/4)
     col.int ~ dnorm(-5, 1/4)
     col.b ~ dnorm(0, 1/36) # colonisation coefficients (intercept and immigration)
     ext.int ~ dnorm(-5, 1/9)
@@ -63,7 +63,7 @@ dso.code <- nimbleCode(
     ### process model
     ## initial occupied cells (immediately prior to observations)
     for (jj in 1:JJ){
-      logit(rho[jj]) <- rho.int + rho.b*init.dist[jj]
+      logit(rho[jj]) <- rho.int #+ rho.b*init.dist[jj]
       occ[jj, 1] ~ dbern(rho[jj])
     }
     
@@ -132,7 +132,7 @@ init.list <- list(occ = cbind(rep(1, JJ),occ.init))
 
 # parameters to monitor
 params <- c("rho.int",
-                   "rho.b",
+                   #"rho.b",
                    "det.int", 
                    "det.b1", 
                    "det.b2",
