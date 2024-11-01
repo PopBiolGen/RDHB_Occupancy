@@ -47,10 +47,10 @@ obs.df <- obs_level_to_df(obs.lev.list)
 dso.code <- nimbleCode(
   {
     # priors
-    rho.int ~ dnorm(0, 1/4) # initial occupancy
-    #rho.b ~ dnorm(0, 1/4)
+    rho.int ~ dnorm(0, 1/2) # initial occupancy, slightly regularising
+    #rho.b ~ dunif(-4, 0)
     col.int ~ dnorm(-5, 1/4)
-    col.b ~ dnorm(0, 1/36) # colonisation coefficients (intercept and immigration)
+    col.b ~ dnorm(0, 1/9) # colonisation coefficients (intercept and immigration)
     ext.int ~ dnorm(-5, 1/9)
     ext.b ~ dnorm(0, 1/4) # extinction coefficients (intercept and control effort)
     det.int ~ dnorm(0, 1/4)
@@ -146,8 +146,8 @@ params <- c("rho.int",
                    "o.t")
 
 # mcmc settings
-nb <- 5000
-ni <- 7000
+nb <- 10000
+ni <- 12000
 nc = 3
 
 # the model
