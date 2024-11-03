@@ -4,7 +4,10 @@ library(rjags)
 library(ggplot2)
 
 load("out/dynamic-spatial-occupancy_RDHB_Nimble_Coda.RData")
-
+gelman.diag(a.n)
+core.pars <- as.matrix(a.n)
+core.pars <- core.pars[, !grepl(pattern = "o.t", colnames(core.pars))]
+pairs(core.pars)
 densplot(a.n)
 
 # function to calculate the dispersal kernel at each distance, with uncertainty from posterior samples

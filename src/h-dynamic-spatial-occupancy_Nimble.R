@@ -50,7 +50,7 @@ dso.code <- nimbleCode(
     rho.int ~ dnorm(0, 1/2) # initial occupancy, slightly regularising
     #rho.b ~ dunif(-4, 0)
     col.int ~ dnorm(-5, 1/4)
-    col.b ~ dnorm(0, 1/9) # colonisation coefficients (intercept and immigration)
+    #col.b ~ dnorm(0, 1/9) # colonisation coefficients (intercept and immigration)
     ext.int ~ dnorm(-5, 1/9)
     ext.b ~ dnorm(0, 1/4) # extinction coefficients (intercept and control effort)
     det.int ~ dnorm(0, 1/4)
@@ -79,7 +79,7 @@ dso.code <- nimbleCode(
     for (tt in 2:(TT+1)){
       for (jj in 1:JJ){
         sp.jj.tt[jj, tt] <- sum(decay.jj.ii[jj, 1:JJ]*occ[1:JJ, tt-1]) # spatial colonisation effect
-        logit(p.col[jj, tt]) <- col.int + col.b*sp.jj.tt[jj, tt]
+        logit(p.col[jj, tt]) <- col.int + sp.jj.tt[jj, tt]# *col.b
         logit(p.ext[jj, tt]) <- ext.int + ext.b*ext.x1[jj, tt-1]
         ext.col[jj, tt] <- (1-occ[jj,tt-1])*p.col[jj, tt] + 
           occ[jj, tt-1]*(1-p.ext[jj, tt])
@@ -139,7 +139,7 @@ params <- c("rho.int",
                    "det.b3",
                    "det.b4",
                    "col.int",
-                   "col.b",
+                   #"col.b",
                    "ext.int",
                    "ext.b",
                    "k",
