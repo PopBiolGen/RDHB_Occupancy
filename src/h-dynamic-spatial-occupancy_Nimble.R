@@ -146,8 +146,8 @@ params <- c("rho.int",
                    "o.t")
 
 # mcmc settings
-nb <- 10000
-ni <- 12000
+nb <- 13000
+ni <- 15000
 nc = 3
 
 # the model

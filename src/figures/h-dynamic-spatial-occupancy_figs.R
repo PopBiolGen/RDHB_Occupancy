@@ -11,7 +11,7 @@ pairs(core.pars)
 densplot(a.n)
 
 # function to calculate the dispersal kernel at each distance, with uncertainty from posterior samples
-calculate_kernel <- function(coda.obj, x = seq(0, 5, 0.1)){
+calculate_kernel <- function(coda.obj, x = seq(0, 9, 0.1)){
   kernel_func <- function(k, x){exp(-k*x)} # kernel function
   samples <- as.matrix(coda.obj)[, "k"] # samples of the parameter
   kern.samps.x <- sapply(X = samples, FUN = kernel_func, x = x) # estimates at each x for each sample
