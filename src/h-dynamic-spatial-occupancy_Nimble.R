@@ -50,7 +50,7 @@ dso.code <- nimbleCode(
     rho.int ~ dnorm(0, 1/2) # initial occupancy, slightly regularising
     #rho.b ~ dunif(-4, 0)
     col.int ~ dnorm(-5, 1/4)
-    col.b ~ dunif(0, 4) # colonisation coefficients (intercept and immigration)
+    col.b ~ dunif(0, 6) # colonisation coefficients (forced positive)
     ext.int ~ dnorm(-5, 1/9)
     ext.b ~ dunif(0, 2) # extinction coefficients forced to be positive
     det.int ~ dnorm(0, 1/4)
@@ -58,7 +58,8 @@ dso.code <- nimbleCode(
     det.b2 ~ dnorm(0, 1/4)
     det.b3 ~ dnorm(0, 1/4)
     det.b4 ~ dnorm(0, 1/4)
-    k ~ dunif(0.1, 1) # rate of spatial decay
+    m ~ dunif(1, 10) # reparameterisation to improve MCMC sampling
+    k <- 1/m # rate of spatial decay
     
     ### process model
     ## initial occupied cells (immediately prior to observations)
