@@ -9,6 +9,7 @@ core.pars <- as.matrix(a.n)
 core.pars <- core.pars[, !grepl(pattern = "o.t", colnames(core.pars))]
 pairs(core.pars)
 densplot(a.n)
+summary(a.n)
 
 ##### Dispersal plot #####
 
@@ -115,3 +116,10 @@ p
 ggsave(filename = "out/dso-mean-occ-over-time.png")
 
 
+##### Density of ext.b #####
+png(filename = "out/dso-extinction-effect.png")
+  plot(density(core.pars[, "ext.b"]), 
+       xlim = c(0, max(core.pars[, "ext.b"])),
+       main = "",
+       xlab = "Extinction coefficient value")
+dev.off()
