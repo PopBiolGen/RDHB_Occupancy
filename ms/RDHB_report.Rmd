@@ -38,25 +38,40 @@ To fit occupancy models, I first aggregate the data according to a spatial grid,
 
 For each cell at each month, then, we have a number of observations recording the presence/absence of RDHB.
 
-There are a large range of potential occupancy models that might be fit to the data.  For now, the most sensible one is a model in which:
+There are a large range of potential occupancy models that might be fit to the data.  I have fit two.
+
+The first model, which I will call the "autocorrelation model" accounts for space and time in a black-box kind of way.  In this model:
 
  - detection varies over the year in a cyclical manner, and according to whether or not water was present at the observation site.  
  - initial occupancy is assumed to be highest close to the first record of RDHB, and decline with distance from this initial record
- - subsequent occupancy varies through time and space according to an autocorrelation model in which the best predictor of occupancy in a cell is the occupancy state of nearby cells, and the best predictor of occupancy in the next time step is occupancy at the current time step.
+ - occupancy varies through space and time according to an autocorrelation model in which the best predictor of occupancy in a cell is the occupancy state of nearby cells, and the best predictor of occupancy in the next time step is occupancy at the current time step.
  
- The autocorrelation model is a bit tricky to understand, but in the absence of strong predictors of occupancy, it provides a sensible natural way for occupancy to vary through time and space.  It will, however, underestimate long-distance dispersal events, and may take some convincing that eradication within a cell has happened.
+ The autocorrelation model is a bit tricky to understand, but in the absence of strong predictors of occupancy, it provides a sensible natural way for occupancy to vary through time and space.  It will, however, underestimate long-distance dispersal events, and may take some convincing that eradication within a cell has happened. This model has been fitted with (relatively new) off the shelf tools from the `spOccupancy` package.
+ 
+The second model is less black box.  This model, which I will call the "dynamic occupancy" model says that at each time step a cell is either occupied or not.  If it is occupied it goes extinct with some probability and if it is not occupied it gets colonised with some probability. This is model which allows us to thread some process into the model by specifying how the extinction and colonisation probabilities are derived.  In this model I have said that there is some constant extinction probability that is increased by the removal of hives.  Colonisation probability is specified by two terms.  The first is a constant, which represent the probability of some rare long-distance dispersal event.  The second term is a spatiotemporal term, which essentially says a cell is more likely to be colonised if nearby cells are already colonised.
+ 
+
  
 # Model results
 
-The latest prediction for occupancy is shown on the below map.
+## Autocorrelation model
+
+The model predictions over the full response are shown in the animation below.
+
+```{r occupancyAnimate, echo = FALSE}
+knitr::include_graphics("../out/multi-season-spatial-occupancy_animation.gif")
+```
+
+
+The predictions for occupancy in the last month are shown on the below map.
 
 ```{r latestMap, echo = FALSE}
 knitr::include_graphics("../out/multi-season-spatial-occupancy.png")
 ```
-Note that there are unsampled cells.  The model can predict to these cells, but will give predictions close to the values in surrounding cells.   
+Note that there are unsampled cells.  The model can predict to these cells, but will give predictions close to the values in surrounding cells. It is probably better to show as is to reveal gaps in the spatial coverage.  
 
 
-Occupancy over time is shown in the time series below.  It indicates that occupancy has declined over time. This result is consistent with the catch-per-unit-effort result we saw earlier.  This suggests that current surveillance and eradication efforts may be working to hold and reduce the extent of the invasion.
+Occupancy over time is shown in the time series below.  It indicates that occupancy has declined over time. This result is consistent with the catch-per-unit-effort result we saw earlier.  This suggests that current surveillance and eradication efforts may be working to hold and reduce the extent of the invasion. Note that this model (because it does not have an explicit mechanism) makes no prediction about unsampled time periods
 
 ```{r occTime, echo = FALSE}
 knitr::include_graphics("../out/multi-season-spatial-occupancy-mean-occ-over-time.png")
@@ -98,6 +113,84 @@ The next figure shows an estimate of how spatial correlation decays with distanc
 knitr::include_graphics("../out/multi-season-spatial-occupancy-correlation-over-distance.png")
 ```
 
-## What next?
+## The dynamic occupancy model
 
-Next step is to build a dynamic occupancy model that describes the invasion process a little more mechanistically.  There is no package that has such a model that can be fit out of the box, so I will need to build it from scratch, which will take a while.
+We can generate similar outputs for the dynamics occupancy model.  The first is a prediction of the number of occupied grid cells in a given month.
+
+```{r occTimeDSO, echo = FALSE}
+knitr::include_graphics("../out/dso-mean-occ-over-time.png")
+```
+
+This model is giving predictions during the unsampled time intervals (months 0-5).  The assumption here is that the observed extinction and colonisation probabilities were also playing out before serious observation began.  This is an assumption and must, ultimately, be incorrect (because the basic pattern that has been observed is negative growth, but growth must have been positive at some point else there would be no bees to worry about). So we take these estimates in the unsampled months with a grain of salt.
+
+Overall, however, the basic pattern is the same as in the autocorrelation model: occupancy declining over time.  Unlike the autotocorrealtion model, however, we can dig into this a little deeper now.
+
+But before we do, let us look at the estimates of detection that fall out of the dynamic occupancy model.
+
+```{r detTimeDSO, echo = FALSE}
+knitr::include_graphics("../out/dso-detection-over-time.png")
+```
+
+Again, we see very similar effects to those given by the autocorrelation model.  Again, there is a huge increase in detection associated with flowers and (to a lesser extent) water.  Again, a small seasonal effect on detection also.
+
+The dynamic occupancy model also gives us a spatial effect.  This spatial effect is much closer to being an estimate of the dispersal kernel for the bees.  Our spatial effect is shown below.
+
+```{r dispKernelDSO, echo = FALSE}
+knitr::include_graphics("../out/dso-dispersal.png")
+```
+
+This gives us a pretty nice estimate of what the dispersal kernel looks like.  The model picks out a very similar spatial scale to the autocorrelation model.  Most dispersal is occurring within 1.5km, but longer distance dispersal (distances up to 5-7km) is possible.
+
+Note that the choice of dispersal function is another assumption in the model.  We can specify different shapes for dispersal and the current version of the model is using the simplest possible shape.  While there may be better shapes that describe dispersal, the basic scale of dispersal we infer is unlikely to change much.
+
+### Effect of hive removal
+
+The dynamic occupancy model (like the autocorrelation model) is clearly showing a population decline.  How much of this decline is due to our finding and removing hives?
+
+The dynamic model gives us insight, and the answer is, that our current rates of hive removal have probably had only a tiny effect on extinction. I have forced the effect of hive removal on extinction probability to be positive.  This is a choice that was made because it makes sense: killing hives reduces the number of bees in an area.  The model's favourite effect size is, however, zero.
+
+```{r extEffDSO, echo = FALSE}
+knitr::include_graphics("../out/dso-extinction-effect.png")
+```
+
+Meanwhile, our "background" extinction probability is estimated to be `r round(plogis(-0.5709), 2)`.  This is the probability of going extinct in a given month, regardless of anything we do.  This is very high.
+
+To give an indication, based on our best estimate for the effect of hive removal, if we remove a hive in a grid cell in a given month this background extinction rate of `r round(plogis(-0.5709), 2)` goes up to `r round(plogis(-0.5709 + 0.159), 2)`; if we remove two hives, it goes up to `r round(plogis(-0.5709 + 2*0.159), 2)`.  
+
+So, we are in the unusual situation that, in the period of the response, the bee populations seem to have been declining, but this has not really been due to our efforts at eradication.
+
+There are a number of explanations, including:
+
+1. The weather conditions during the response period have been unfavourable for RDHB, though they must have been favourable prior to this.
+2. Some local species has started preying upon or parasitising RDHB.
+
+# Recommendations
+
+A few recommendations fall out of this analysis.
+
+### Detection
+
+Detection in the absence of water and/or flowers is very low (around 3%), but if there is water and flowers around, detection is very high (around 70%).  The surveillance team would probably be better off searching for water and flowers initially than for bees.  This also suggests that attractants in the form of artificial water/flower sources might be a powerful detection method.
+
+The species is detectable all year round.
+
+### Occupancy
+
+During the response period, the population appears to have been in strong decline.  But it clearly must have been growing positively before the response.  The response has not materially contributed to the declines that are observed.  If the negative growth during the response has been driven by weather conditions then there remains a strong risk that the population could boom again if the right weather conditions present themselves.
+
+This incursion may be on its way to a natural extinction, but this seems unlikely.  Particularly as it appears to be shrinking back to the gas hub.  It is likely that conditions there are supporting the population's ongoing survival. Ongoing surveillance and eradication efforts are advised, with particular focus on the gas plant.
+
+### Surveillance
+
+There is a clear inference that this species may disperse up to five kilometres.  This means it has substantial capacity to very quickly reinvade the Burrup peninsula if conditions become favourable.  The initial extent of the incursion is not well understood, but under current (negative) growth rates almost all of the surveyed area could have been occupied at the beginning of the response. 
+All sources of fresh water and large sources of flower resource within 10-15 km of the gas hub should be surveyed to ensure an adequate buffer around the known infestations.
+
+
+
+
+
+
+
+
+
+

@@ -33,7 +33,8 @@ anim <- p +
   transition_states(time.step, transition_length = 2, state_length = 1) +
   ease_aes("cubic-in-out")
 
-#animate(anim, nframes = max(gd.long$time.step), fps = 1)
+anim <- animate(anim, nframes = max(gd.long$time.step), fps = 1)
+anim_save(filename = "out/multi-season-spatial-occupancy_animation.gif")
 
 
 ##### Make map of occupancy in last time step #####

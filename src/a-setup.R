@@ -13,6 +13,9 @@ data_dir <- file.path(Sys.getenv("DATA_PATH"), "RDHB")
 # and set DATA_PATH="your/local/path/to/data/directory"
 # and then restart R
 
+# check there is an output directory, and make one if it doesn't exist
+if (!dir.exists("out")) system("mkdir out")
+
 ##### Custom functions #####
 
 # To aggregate data in space and time
