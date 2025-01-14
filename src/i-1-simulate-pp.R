@@ -25,13 +25,19 @@ survey.density <- 2*density # density of survey points
 g0.x <- 0.5*x.max # location of centre of invasion (putative origin)
 g0.y <- 0.5*y.max
 
+# Function to compute pairwise distances between two sets of points (in n-dimensions)
+pairwise_distances <- function(A, B) {
+  # Expand A and B to compute the Euclidean distances
+  sqrt(outer(rowSums(A^2), rowSums(B^2), `+`) - 2 * tcrossprod(A, B))
+}
+
 # initialisation for dynamic state variables
 r0 <- 0.2*max(c(x.max, y.max)) # radius of invasion extent at time = 0, in m
 c.n <- density*x.max*y.max # number of colonies
 c.j0.x <- runif(n = c.n, min = x.min, max = x.max) # place initial colonies at time 0
 c.j0.y <- runif(n = c.n, min = y.min, max = y.max)
 c.0 <- cbind(c.j0.x, c.j0.y) # matrix of colony locations
-z0 <- as.matrix(dist(rbind(cbind(g0.x, g0.y), cbind(c.j0.x, c.j0.y))))[-1,1] < r0 # distances from g0 < r0 (i.e. which colonies are real.)
+z0 <- pairwise_distances(c.0, cbind(g0.x, g0.y)) < r0 # distances from g0 < r0 (i.e. which colonies are real.)
 s.n <- survey.density*x.max*y.max # number of surveys
 s.i0.x <- runif(n = s.n, min = x.min, max = x.max) # place initial surveys at time 0
 s.i0.y <- runif(n = s.n, min = y.min, max = y.max)
@@ -42,12 +48,6 @@ t.step <- rep(1:nt, each = s.n) # vector of time steps
 sur.lev.var <- rnorm(length(t.step)) # survey level variable (affects detection)
 logit.det <- alpha.det + beta.det*sur.lev.var # linear model on detection
 det <- plogis(logit.det) # conditional detection probability
-  
-  # Function to compute pairwise distances between two sets of points (in n-dimensions)
-  pairwise_distances <- function(A, B) {
-    # Expand A and B to compute the Euclidean distances
-    sqrt(outer(rowSums(A^2), rowSums(B^2), `+`) - 2 * tcrossprod(A, B))
-  }
   
 d.ij <- pairwise_distances(s.0, c.0[z0,]) # distances between surveys and colonies
 
