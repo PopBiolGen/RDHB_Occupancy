@@ -99,7 +99,7 @@ pp.code <- nimbleCode(
   
   # calculate likelihoods
   for (ii in 1:II){
-    obs.ij[ii] ~ dbern(det[ii]*prob.ij[ii])
+    obs.i[ii] ~ dbern(det[ii]*prob.ij[ii])
   }
   
  }
@@ -125,7 +125,7 @@ constant.list <- list(
 data.list <- list(
   s.0 = s.0, # survey site locations (matrix of X and Y coordinates)
   sur.lev.var = sur.lev.var, # detection covariate (vector of length II)
-  obs.ij = obs.ij
+  obs.i = obs.i
 )
 
 dim.list <- list(
