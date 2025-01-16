@@ -1,7 +1,7 @@
 # Script to simulate data for proposed point-process model
 
 # some parameters
-density <- 1e-6 # colonies per m^2
+density <- 1e-7 # colonies per m^2
 #s.rad <- 3 # spot search effective radius
 alpha.det <- 0 # intercept for log-odds of detection
 beta.det <- 2 # slope of some linear effect on detection
@@ -57,9 +57,9 @@ d.ij <- pairwise_distances(s.0, c.0[z0,]) # distances between surveys and coloni
 
 p.pres.ij <- spatial_decay(d.ij, k = k)
 p.pres.comp <- 1-p.pres.ij # complement of prob presence
-p0.ij <- apply(p.pres.comp, MARGIN = 1, FUN = prod) # probability of not present from any source
-obs.ij <- rbinom(n = length(p0.ij), size = 1, prob = (1-p0.ij)*det)
+p0.i <- apply(p.pres.comp, MARGIN = 1, FUN = prod) # probability of not present from any source
+obs.i <- rbinom(n = length(p0.i), size = 1, prob = (1-p0.i)*det)
 
 
-sum(obs.ij)
-plot(s.i0.y~s.i0.x, col = 1+obs.ij)
+sum(obs.i)
+plot(s.i0.y~s.i0.x, col = 1+obs.i)

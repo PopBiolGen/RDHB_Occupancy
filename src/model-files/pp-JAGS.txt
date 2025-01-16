@@ -30,11 +30,11 @@ model{
       # distance from colony to site
       d.ij[ii, jj] <- sqrt((s.0[ii, 1] - c.j0[jj, 1])^2 + (s.0[ii, 2] - c.j0[jj, 2])^2)
       # probability of not coming from each colony
-      p.not.ij[ii, jj] <- z[jj]*(1-exp(-distmat[i,j]/k)) + (1-z[jj])
+      p.not.ij[ii, jj] <- z[jj]*(1-exp(-d.ij[ii,jj]/k)) + (1-z[jj])
     }
     # probability of presence at site across all (real) colonies
     prob.pres.i[ii] <- 1-prod(p.not.ij[ii,])
-    logit(det[ii]) <- alpha.det + beta.det * surv.lev.var[ii]
-    obs.ij[ii] ~ dbern(prob.pres.i[ii] * det[ii])
+    logit(det[ii]) <- alpha.det + beta.det * sur.lev.var[ii]
+    obs.i[ii] ~ dbern(prob.pres.i[ii] * det[ii])
   }
 }
