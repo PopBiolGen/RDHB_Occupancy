@@ -2,17 +2,16 @@
 
 # some parameters
 density <- 1e-6 # colonies per m^2
-s.rad <- 3 # spot search effective radius
+#s.rad <- 3 # spot search effective radius
 alpha.det <- 0 # intercept for log-odds of detection
 beta.det <- 2 # slope of some linear effect on detection
-alpha.extent <- 50 # intercept for change in extent per time period
-beta.extent <- -10 # effect of control on extent growth per time period
-sd.extent <- 30 # standard deviation of random effect on change in extent per time period
+#alpha.extent <- 50 # intercept for change in extent per time period
+#beta.extent <- -10 # effect of control on extent growth per time period
+#sd.extent <- 30 # standard deviation of random effect on change in extent per time period
 k <- 500 # parameter affecting spread of the density kernel
 
 # some setup variables
 nt <- 1 # number of time steps
-obs.n <- 100 # number of observations per time step
 x.min <- y.min <- 0 # possible spatial extent of the species across all time, bounding box
 x.max <- y.max <- 20000 # in metres
 
