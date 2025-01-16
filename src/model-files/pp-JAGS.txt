@@ -18,7 +18,7 @@ model{
     
     # find which are within extent radius
       # Compute the pairwise distances
-    in.ex[jj] <- step(sqrt((c.j0[jj, 1]-g0[1, 1])^2 + (c.j0[jj, 2]-g0[1, 2])^2) - r0)  
+    in.ex[jj] <- step(r0 - sqrt((c.j0[jj, 1]-g0[1, 1])^2 + (c.j0[jj, 2]-g0[1, 2])^2))  
     # which of these colonies are real?
     da[jj] ~ dbern(psi) # fraction of data augmented colonies
     z[jj] <- in.ex[jj]*da[jj] # colonies that are real
@@ -30,11 +30,12 @@ model{
       # distance from colony to site
       d.ij[ii, jj] <- sqrt((s.0[ii, 1] - c.j0[jj, 1])^2 + (s.0[ii, 2] - c.j0[jj, 2])^2)
       # probability of not coming from each colony
-      p.not.ij[ii, jj] <- z[jj]*(1-exp(-d.ij[ii,jj]/k)) + (1-z[jj])
+      p.not.ij[ii, jj] <- z[jj]*(1-exp(-d.ij[ii,jj]/k)*3.14*3^2) + (1-z[jj])
     }
     # probability of presence at site across all (real) colonies
     prob.pres.i[ii] <- 1-prod(p.not.ij[ii,])
+    pres[ii] ~ dbern(prob.pres.i[ii])
     logit(det[ii]) <- alpha.det + beta.det * sur.lev.var[ii]
-    obs.i[ii] ~ dbern(prob.pres.i[ii] * det[ii])
+    obs.i[ii] ~ dbern(pres[ii] * det[ii])
   }
 }
