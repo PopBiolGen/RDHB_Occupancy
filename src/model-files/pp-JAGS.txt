@@ -1,0 +1,40 @@
+# Point process abundance model in JAGS
+model{
+  #priors
+  psi ~ dunif(0, 1) # probability of a DA colony being real
+  r0 ~ dunif(500, x.max/2) # extent of the invasion
+  alpha.det ~ dnorm(0, 1/4) # intercept for log-odds of detection
+  beta.det ~ dnorm(0, 1/4) # slope of some linear effect on detection
+  k ~ dunif(100, 10000) # parameter affecting spread of the density kernel
+  
+  # place ground 0
+  g0[1, 1] ~ dunif(g0.x.min, g0.x.max) # ground zero x
+  g0[1, 2] ~ dunif(g0.y.min, g0.y.max) # ground zero y
+  
+  for (jj in 1:JJ){ # step through potential colonies
+    # place colonies
+    c.j0[jj, 1] ~ dunif(x.min, x.max) # place initial colonies into X Y matrix
+    c.j0[jj, 2] ~ dunif(y.min, y.max)
+    
+    # find which are within extent radius
+      # Compute the pairwise distances
+    in.ex[jj] <- step(sqrt((c.j0[jj, 1]-g0[1, 1])^2 + (c.j0[jj, 2]-g0[1, 2])^2) - r0)  
+    # which of these colonies are real?
+    da[jj] ~ dbern(psi) # fraction of data augmented colonies
+    z[jj] <- in.ex[jj]*da[jj] # colonies that are real
+  }
+  
+  for (ii in 1:II){ # step through survey sites and calculate likelihoods
+    # probability of presence, from any colony
+    for (jj in 1:JJ){
+      # distance from colony to site
+      d.ij[ii, jj] <- sqrt((s.0[ii, 1] - c.j0[jj, 1])^2 + (s.0[ii, 2] - c.j0[jj, 2])^2)
+      # probability of not coming from each colony
+      p.not.ij[ii, jj] <- z[jj]*(1-exp(-distmat[i,j]/k)) + (1-z[jj])
+    }
+    # probability of presence at site across all (real) colonies
+    prob.pres.i[ii] <- 1-prod(p.not.ij[ii,])
+    logit(det[ii]) <- alpha.det + beta.det * surv.lev.var[ii]
+    obs.ij[ii] ~ dbern(prob.pres.i[ii] * det[ii])
+  }
+}
