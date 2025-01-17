@@ -1,6 +1,7 @@
 # A JAGS model to estimate parameters of the pp model.
 
 library(rjags)
+library(MCMCvis)
 
 # simulate the data
 source("src/i-1-simulate-pp.R")
@@ -29,12 +30,12 @@ data.list <- list(
 # initials
 init.list <- list(
   g0 = matrix(c(8000, 9000), nrow = 1),
-  k = 500,
   alpha.det = 0,
-  beta.det = 0,
+  beta.det = 1,
   r0 = 5000,
-  psi = 0.5,
-  da = rep(1,max.c))
+  da = rep(1,max.c),
+  pres = rep(1, length(obs.i)),
+  sigma = 1000)
 
 # parameters to monitor
 params <- c("psi",
@@ -65,3 +66,6 @@ gelman.diag(b)
 
 
 summary(b)
+
+temp <- MCMCchains(b)
+pairs(temp)

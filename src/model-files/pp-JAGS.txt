@@ -5,7 +5,7 @@ model{
   r0 ~ dunif(500, x.max/2) # extent of the invasion
   alpha.det ~ dnorm(0, 1/4) # intercept for log-odds of detection
   beta.det ~ dnorm(0, 1/4) # slope of some linear effect on detection
-  sigma ~ dunif(100, 10000) # parameter affecting spread of the density kernel
+  sigma ~ dunif(100, 1000) # parameter affecting spread of the density kernel
   
   # place ground 0
   g0[1, 1] ~ dunif(g0.x.min, g0.x.max) # ground zero x
@@ -33,7 +33,7 @@ model{
       lambda.ij[ii, jj] <- z[jj]*lambda.0*exp(-d.ij[ii, jj]^2/(2*sigma^2)) # real or not, and number
     }
     # sum of expected rate
-    lambda.i[ii] <- sum(lambda.ij[ii,])
+    lambda.i[ii] <- sum(lambda.ij[ii,]) + 0.001 # avoiding zeros here avoids issues with initialisation of model.
     # probability of presence at site across all (real) colonies
     prob.pres.i[ii] <- 1 - exp(-lambda.i[ii]) # collapse poisson expectation to binary
     pres[ii] ~ dbern(prob.pres.i[ii])
