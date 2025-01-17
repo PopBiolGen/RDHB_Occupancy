@@ -6,13 +6,14 @@ library(rjags)
 source("src/i-1-simulate-pp.R")
 
 # Data
-max.c <- ceiling(2*c.n) # maximum colonies (for data augmentation)
+max.c <- ceiling(2*sum(z0)) # maximum colonies (for data augmentation)
 
 data.list <- list(
   s.0 = s.0, # survey site locations (matrix of X and Y coordinates)
   sur.lev.var = sur.lev.var, # detection covariate (vector of length II)
   obs.i = obs.i,
   #nt = 1, # number of time steps
+  lambda.0 = 300, # as data for now
   x.min = 0,
   y.min = 0, # possible spatial extent of the species across all time, bounding box
   x.max = 20000,
@@ -30,14 +31,18 @@ init.list <- list(
   g0 = matrix(c(8000, 9000), nrow = 1),
   k = 500,
   alpha.det = 0,
-  beta.det = 0)
+  beta.det = 0,
+  r0 = 5000,
+  psi = 0.5,
+  da = rep(1,max.c))
 
 # parameters to monitor
 params <- c("psi",
             "r0",
             "alpha.det",
             "beta.det",
-            "k")
+            "sigma",
+            "g0")
 
 # mcmc settings
 nb <- 5000
@@ -48,7 +53,7 @@ nc = 3
 a <- jags.model(file = "src/model-files/pp-JAGS.txt", 
                 data = data.list, 
                 inits = init.list,
-                n.chains = 3)
+                n.chains = nc)
 
 update(a, n.iter = nb) # burn in
 b<-coda.samples(a, 

@@ -2,13 +2,14 @@
 
 # some parameters
 density <- 1e-7 # colonies per m^2
-#s.rad <- 3 # spot search effective radius
+s.rad <- 3 # spot search effective radius
 alpha.det <- 0 # intercept for log-odds of detection
 beta.det <- 2 # slope of some linear effect on detection
 #alpha.extent <- 50 # intercept for change in extent per time period
 #beta.extent <- -10 # effect of control on extent growth per time period
 #sd.extent <- 30 # standard deviation of random effect on change in extent per time period
-k <- 500 # parameter affecting spread of the density kernel
+sigma <- 500 # parameter affecting spread of the density kernel
+lambda.0 <- 300 # expected number of encounters at 0 distance from a colony
 
 # some setup variables
 nt <- 1 # number of time steps
@@ -18,7 +19,7 @@ x.max <- y.max <- 20000 # in metres
 g0.x.min <- g0.y.min <- 7500 # bounding box for possible location of ground zero
 g0.x.max <- g0.y.max <- 12500
 
-survey.density <- 2*density # density of survey points
+survey.density <- 30*density # density of survey points
 
 # place ground zero
 g0.x <- 0.5*x.max # location of centre of invasion (putative origin)
@@ -32,7 +33,7 @@ pairwise_distances <- function(A, B) {
 
 # initialisation for dynamic state variables
 r0 <- 0.2*max(c(x.max, y.max)) # radius of invasion extent at time = 0, in m
-c.n <- density*x.max*y.max # number of colonies
+c.n <- density*x.max*y.max # number of "colonies"
 c.j0.x <- runif(n = c.n, min = x.min, max = x.max) # place initial colonies at time 0
 c.j0.y <- runif(n = c.n, min = y.min, max = y.max)
 c.0 <- cbind(c.j0.x, c.j0.y) # matrix of colony locations
@@ -50,15 +51,16 @@ det <- plogis(logit.det) # conditional detection probability
   
 d.ij <- pairwise_distances(s.0, c.0[z0,]) # distances between surveys and colonies
 
-  # function to calculate probability from distances (placeholder for now)
-  spatial_decay <- function(distance, k){
-    exp(-distance/k)#/(2*pi*distance) # probability of an individual being at the point
+  # function to calculate probability of at least one being present from distances (from AHM 10.8)
+  spatial_decay <- function(distance, sigma, lambda.0){
+    lambda.ij <- lambda.0*exp(-distance^2/(2*sigma^2)) # poisson encounter rate with distance
+    lambda.i <- apply(lambda.ij, 1, sum) # sum over colonies
+    prob.pres.i <- 1-exp(-lambda.i) # collapsed to a binary
+    prob.pres.i
   }
 
-p.pres.ij <- spatial_decay(d.ij, k = k)
-p.pres.comp <- 1-p.pres.ij # complement of prob presence
-p0.i <- apply(p.pres.comp, MARGIN = 1, FUN = prod) # probability of not present from any source
-obs.i <- rbinom(n = length(p0.i), size = 1, prob = (1-p0.i)*det)
+p.pres.i <- spatial_decay(d.ij, sigma, lambda.0)
+obs.i <- rbinom(n = length(p.pres.i), size = 1, prob = p.pres.i*det)
 
 
 sum(obs.i)

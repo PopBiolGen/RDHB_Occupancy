@@ -5,7 +5,7 @@ model{
   r0 ~ dunif(500, x.max/2) # extent of the invasion
   alpha.det ~ dnorm(0, 1/4) # intercept for log-odds of detection
   beta.det ~ dnorm(0, 1/4) # slope of some linear effect on detection
-  k ~ dunif(100, 10000) # parameter affecting spread of the density kernel
+  sigma ~ dunif(100, 10000) # parameter affecting spread of the density kernel
   
   # place ground 0
   g0[1, 1] ~ dunif(g0.x.min, g0.x.max) # ground zero x
@@ -17,7 +17,7 @@ model{
     c.j0[jj, 2] ~ dunif(y.min, y.max)
     
     # find which are within extent radius
-      # Compute the pairwise distances
+    # Compute the pairwise distances
     in.ex[jj] <- step(r0 - sqrt((c.j0[jj, 1]-g0[1, 1])^2 + (c.j0[jj, 2]-g0[1, 2])^2))  
     # which of these colonies are real?
     da[jj] ~ dbern(psi) # fraction of data augmented colonies
@@ -29,11 +29,13 @@ model{
     for (jj in 1:JJ){
       # distance from colony to site
       d.ij[ii, jj] <- sqrt((s.0[ii, 1] - c.j0[jj, 1])^2 + (s.0[ii, 2] - c.j0[jj, 2])^2)
-      # probability of not coming from each colony
-      p.not.ij[ii, jj] <- z[jj]*(1-exp(-d.ij[ii,jj]/k)*3.14*3^2) + (1-z[jj])
+      # expected encounter rate from each colony
+      lambda.ij[ii, jj] <- z[jj]*lambda.0*exp(-d.ij[ii, jj]^2/(2*sigma^2)) # real or not, and number
     }
+    # sum of expected rate
+    lambda.i[ii] <- sum(lambda.ij[ii,])
     # probability of presence at site across all (real) colonies
-    prob.pres.i[ii] <- 1-prod(p.not.ij[ii,])
+    prob.pres.i[ii] <- 1 - exp(-lambda.i[ii]) # collapse poisson expectation to binary
     pres[ii] ~ dbern(prob.pres.i[ii])
     logit(det[ii]) <- alpha.det + beta.det * sur.lev.var[ii]
     obs.i[ii] ~ dbern(pres[ii] * det[ii])
