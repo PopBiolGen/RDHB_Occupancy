@@ -21,6 +21,9 @@ g0.x.max <- g0.y.max <- 12500
 
 survey.density <- 30*density # density of survey points
 
+mask.polygon <- matrix(c(x.min, x.max, x.max, y.min, y.max, y.min), nrow = 3, dimnames = list(NULL, c("x", "y"))) # make a polygon denoting available habitat (a triangle in this case)
+
+
 # place ground zero
 g0.x <- 0.5*x.max # location of centre of invasion (putative origin)
 g0.y <- 0.5*y.max
@@ -31,6 +34,27 @@ pairwise_distances <- function(A, B) {
   sqrt(outer(rowSums(A^2), rowSums(B^2), `+`) - 2 * tcrossprod(A, B))
 }
 
+# function to tell us if a point is inside or outside a polygon.
+# Uses the ray casting algorithm, heading right from the test point.
+inside <- function (pt, pg){
+  edge.in <- function(pt, pg){ # Is this an edge that we will pass through?
+    pg2 <- rbind(pg[-1,], pg[1,])
+    b <- (pg2[, "y"] - pg[, "y"])/(pg2[, "x"] - pg[, "x"])  # slope
+    a <- pg[, "y"] - b*pg[, "x"] # intercept
+    above <- pt[, "y"] > (a+b*pt[, "x"]) # exclude cases on the line
+    (above & b > 0) | (!above & b < 0) | (is.infinite(b) & pg[, "x"] > pt[, "x"])
+  }
+  ei <- edge.in(pt, pg)
+  test.y <- pt[,"y"] # y-value of point to be tested
+  pg.y <- pg[, "y"] # y-values of polygon vertices
+  t1 <- test.y <= pg.y # test is less than a vertex's y value
+  t2 <- test.y >= pg.y # test is greater than a vertex's y value
+  t2 <- c(t2[-1], t2[1]) # align adjacent vertices
+  nc <- sum(((t2+t1)!=1) & ei) # crossings where this is true
+  (nc %% 2) == 1
+}
+
+
 # initialisation for dynamic state variables
 r0 <- 0.2*max(c(x.max, y.max)) # radius of invasion extent at time = 0, in m
 c.n <- density*x.max*y.max # number of "colonies"
@@ -38,6 +62,7 @@ c.j0.x <- runif(n = c.n, min = x.min, max = x.max) # place initial colonies at t
 c.j0.y <- runif(n = c.n, min = y.min, max = y.max)
 c.0 <- cbind(c.j0.x, c.j0.y) # matrix of colony locations
 z0 <- pairwise_distances(c.0, cbind(g0.x, g0.y)) < r0 # distances from g0 < r0 (i.e. which colonies are real.)
+z0 <- GEOmap::inside()
 s.n <- survey.density*x.max*y.max # number of surveys
 s.i0.x <- runif(n = s.n, min = x.min, max = x.max) # place initial surveys at time 0
 s.i0.y <- runif(n = s.n, min = y.min, max = y.max)
