@@ -23,8 +23,10 @@ data.list <- list(
   g0.y.min = 7500,
   g0.x.max = 12500,
   g0.y.max = 12500,
-  II = length(s.i0.x), # number of sites
-  JJ = max.c # maximum number of colonies (data-augmentation approach)
+  II = nrow(s.0), # number of sites
+  JJ = max.c, # maximum number of colonies (data-augmentation approach)
+  mask.raster = mask.raster, # habitat raster matrix
+  raster.scale = raster.scale # scalar giving size of raster pixels
 )
 
 # initials
@@ -46,8 +48,8 @@ params <- c("psi",
             "g0")
 
 # mcmc settings
-nb <- 5000
-ni <- 10000
+nb <- 5
+ni <- 10
 nc = 3
 
 # the model

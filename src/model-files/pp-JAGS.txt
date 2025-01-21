@@ -17,11 +17,16 @@ model{
     c.j0[jj, 2] ~ dunif(y.min, y.max)
     
     # find which are within extent radius
-    # Compute the pairwise distances
-    in.ex[jj] <- step(r0 - sqrt((c.j0[jj, 1]-g0[1, 1])^2 + (c.j0[jj, 2]-g0[1, 2])^2))  
-    # which of these colonies are real?
+      # Compute the pairwise distances
+    in.ex[jj] <- step(r0 - sqrt((c.j0[jj, 1]-g0[1, 1])^2 + (c.j0[jj, 2]-g0[1, 2])^2))
+    
+    # which are within suitable habitat?
+    in.hab[jj] <- mask.raster[trunc(c.j0[jj, 2] / raster.scale)+1, trunc(c.j0[jj, 1] / raster.scale)+1]
+    
+    # which of these da colonies are real?
     da[jj] ~ dbern(psi) # fraction of data augmented colonies
-    z[jj] <- in.ex[jj]*da[jj] # colonies that are real
+    
+    z[jj] <- in.ex[jj]*da[jj]*in.hab[jj] # colonies that are real
   }
   
   for (ii in 1:II){ # step through survey sites and calculate likelihoods

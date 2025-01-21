@@ -64,7 +64,7 @@ g0.x.max <- g0.y.max <- 12500
 survey.density <- 30*density # density of survey points
 
 mask.raster <- matrix(c(1,0,1,1), nrow = 2) # make a "raster" denoting available habitat (a triangle in this case)
-
+raster.scale <- x.max/nrow(mask.raster)
 
 # place ground zero
 g0.x <- 0.5*x.max # location of centre of invasion (putative origin)
