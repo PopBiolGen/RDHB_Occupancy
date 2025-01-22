@@ -1,0 +1,70 @@
+---
+title: "Point process model"
+author: "Ben Phillips"
+date: "2025-01-21"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## Model description
+
+We make inference assuming a point-process spread model, in continuous space and discrete time. The model takes elements of a SECR model, but without the individual capture histories.  It combines this with a simple point-process growth/spread model.
+
+## Process model
+
+### Initial state
+
+At time, $t=0$, we initialise a population of colonies as points in space.  We define an area of extent for the population defined by a circle with centre coordinates $\mathbf{g}_0$ (a vector of length 2) and with radius $r_0$.  Within this area, colonies can only exist in suitable habitat, given by a (known) matrix of habitat values $\mathbf{H} \in \{0, 1\}$.  Within suitable habitat, colonies are assumed uniformly distributed with locations $\mathbf{C}_0$ (an $n_0 \times 2$ matrix, where $n_0$ is the initial number of colonies).
+
+### Dynamics
+
+We assume the population grows according to simple stochastic geometric growth, with a time varying per-capita growth rate, $\lambda_t$.  Such that $n_{t+1} \sim \text{Poisson}(\lambda_t n_t)$.
+
+For each colony, $j$, in $\mathbf{C}_0$, then, we first draw a realised number of daughter colonies, $n_{j, t+1} \sim \text{Poisson}(\lambda_t)$.  This relates to the population level map, because the sum of a set of poisson variables is itself a poisson.
+
+We determine the location of each colony in $t+1$ by drawing its location from a dispersal kernel centred on its parent colony such that:
+
+$$
+c_{j,t+1} \sim K_d(c_{j,t})
+$$
+
+Where $K_d()$ is the dispersal kernel, which will carry additional parameters.  In the case where we use an isotropic bivariate normal distribution, for example, we would have just a single additional parameter, $\sigma_d$. Colonies that disperse into unsuitable habitat are removed (i.e. the space has absorbing boundaries).
+
+The growth rate is a function of time.  At a minimum, this function should include an effect for control effort, but there are numerous additional covariates and structures (e.g., density dependence) we might want to employ to define $\lambda_t$.
+
+## Observation model
+
+We assume that there are a large number of surveys, $s_i$, each of which has some probability of detecting our species.  For this model to work in the absence of mark-resight data requires a high desnity of surveys relative to colonies and/or some good prior knowledge about how detection declines with distance from the colony.
+
+The model is motivated by invasive hymenoptera, or wood boring beetles, where it is sensible to think about an invasion of colonies, each containing many individuals.  Under this scenario, there are many individuals from each colony that can potentially be detected, and we can sensibly assume that these individuals are at highest density at the colony, with decreasing density as we move away from the colony.  Essentially we have a distance sampling model.  Again, we need a kernel to describe the way that density declines with distance from the colony:
+
+$$
+u_{i,j} = u_0 \times K_u(d_{i,j})
+$$
+
+where $u_0$ is the density at the colony (essentially the number of motile individuals residing at the colony), $K_u()$ is the density kernel that exists around each colony $d_{i,j}$ is the distance between survey site $s_i$ and colony $c_j$.
+
+Across all colonies, then,
+
+$$
+u_i = u_0\sum_j K_u(d_{i,j})
+$$
+
+gives the density of individuals at each survey location.  We can then treat the number of individuals present at $s_{i,t}$ as a Poisson distributed variable.  In the common event that we do not have count data, we can express the poisson rate as a probability that at least one individual is present at $s_{i,t}$: $p_{i,t} = 1-e^{-u_{i,t}}$.  We can then treat the presence/absence of at least one individual as a latent variable:
+
+$$
+z_{i,t} \sim \text{Bernoulli}(p_{i,t})
+$$
+
+We can then proceed to the likelihood for each of our observations by defnining a detection function yielding the probability of detection given presence, $\psi_{i,t}$.  This leads us, finally to the full likelihood for each of our observations:
+
+$$
+o_{i,t} \sim \text{Bernoulli}(z_{i,t}\psi_{i,t})
+$$
+
+## Thoughts
+
+In some situations (e.g. PSHB) $K_u() \equiv K_d()$.
