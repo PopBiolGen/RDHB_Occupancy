@@ -7,14 +7,17 @@ library(MCMCvis)
 source("src/i-1-simulate-pp.R")
 
 # Data
-max.c <- ceiling(2*sum(z0)) # maximum colonies (for data augmentation)
+max.c <- ceiling(10*sum(z0)) # maximum colonies (for data augmentation)
+n.s <- tapply(sim.dat[,"time"], sim.dat[,"time"], length) # n surveys in each time period
 
 data.list <- list(
-  s.0 = s.0, # survey site locations (matrix of X and Y coordinates)
-  sur.lev.var = sur.lev.var, # detection covariate (vector of length II)
-  obs.i = obs.i,
-  #nt = 1, # number of time steps
-  lambda.0 = 300, # as data for now
+  nt = max(sim.dat[, "time"]), # number of time steps
+  s.0 = sim.dat[, c("x", "y")], # survey site locations (matrix of X and Y coordinates)
+  sur.lev.var = sim.dat[, "det.var"], # detection covariate (vector of length II)
+  t.id = sim.dat[, "time"], # time step
+  obs.i = sim.dat[, "obs"], # presence/absence observations
+  lambda.var = lambda.x, # covariate determining lambda in each time step
+  lambda.0 = 300, # as data for now (note this is a different lambda to above; need to fix names)
   x.min = 0,
   y.min = 0, # possible spatial extent of the species across all time, bounding box
   x.max = 20000,
@@ -23,7 +26,7 @@ data.list <- list(
   g0.y.min = 7500,
   g0.x.max = 12500,
   g0.y.max = 12500,
-  II = nrow(s.0), # number of sites
+  II = nrow(sim.dat), # total number of surveys
   JJ = max.c, # maximum number of colonies (data-augmentation approach)
   mask.raster = mask.raster, # habitat raster matrix
   raster.scale = raster.scale # scalar giving size of raster pixels
@@ -35,16 +38,20 @@ init.list <- list(
   alpha.det = 0,
   beta.det = 1,
   r0 = 5000,
-  da = rep(1,max.c),
-  pres = rep(1, length(obs.i)),
-  sigma = 1000)
+  da = matrix(1, nrow = max(sim.dat[, "time"]), ncol = max.c),
+  pres = rep(1, nrow(sim.dat)),
+  sigma.u = 1000,
+  sigma.d = 1000)
 
 # parameters to monitor
 params <- c("psi",
             "r0",
             "alpha.det",
             "beta.det",
-            "sigma",
+            "sigma.u",
+            "sigma.d",
+            "alpha.lambda",
+            "beta.lambda",
             "g0")
 
 # mcmc settings

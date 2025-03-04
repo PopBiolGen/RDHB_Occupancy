@@ -2,40 +2,61 @@
 model{
   #priors
   psi ~ dunif(0, 1) # probability of a DA colony being real
-  r0 ~ dunif(500, x.max/2) # extent of the invasion
+  r0 ~ dunif(500, x.max/2) # extent of the invasion at t = 0
   alpha.det ~ dnorm(0, 1/4) # intercept for log-odds of detection
   beta.det ~ dnorm(0, 1/4) # slope of some linear effect on detection
-  sigma ~ dunif(100, 1000) # parameter affecting spread of the density kernel
+  sigma.u ~ dunif(100, 1000) # parameter affecting spread of the foraging density kernel
+  sigma.d ~ dunif(100, 1000) # parameter affecting spread of the dispersal kernel
+  alpha.lambda ~ dnorm(0, 1/4) # intercept for log mean growth rate
+  beta.lambda ~  dnorm(0, 1/4) # slope for linear effect on log mean growth rate
   
   # place ground 0
   g0[1, 1] ~ dunif(g0.x.min, g0.x.max) # ground zero x
   g0[1, 2] ~ dunif(g0.y.min, g0.y.max) # ground zero y
   
-  for (jj in 1:JJ){ # step through potential colonies
+  # initialise colony locations
+  for (jj in 1:JJ){ # step through potential colonies at time = 1
     # place colonies
-    c.j0[jj, 1] ~ dunif(x.min, x.max) # place initial colonies into X Y matrix
-    c.j0[jj, 2] ~ dunif(y.min, y.max)
+    c.j0[1, jj, 1] ~ dunif(x.min, x.max) # place initial colonies into t X Y array
+    c.j0[1, jj, 2] ~ dunif(y.min, y.max)
     
     # find which are within extent radius
       # Compute the pairwise distances
-    in.ex[jj] <- step(r0 - sqrt((c.j0[jj, 1]-g0[1, 1])^2 + (c.j0[jj, 2]-g0[1, 2])^2))
+    in.ex[jj] <- step(r0 - sqrt((c.j0[1, jj, 1]-g0[1, 1])^2 + (c.j0[1, jj, 2]-g0[1, 2])^2))
     
     # which are within suitable habitat?
-    in.hab[jj] <- mask.raster[trunc(c.j0[jj, 2] / raster.scale)+1, trunc(c.j0[jj, 1] / raster.scale)+1]
+    in.hab[1, jj] <- mask.raster[trunc(c.j0[1, jj, 2] / raster.scale)+1, trunc(c.j0[1, jj, 1] / raster.scale)+1]
     
     # which of these da colonies are real?
-    da[jj] ~ dbern(psi) # fraction of data augmented colonies
+    da[1, jj] ~ dbern(psi) # fraction of data augmented colonies
     
-    z[jj] <- in.ex[jj]*da[jj]*in.hab[jj] # colonies that are real
+    z[1, jj] <- in.ex[jj]*da[1, jj]*in.hab[1, jj] # colonies that are real
   }
-  
+
+  # colony dynamics
+  for (tt in 2:nt){ # step through time beyond t = 1
+    log(lambda.t[tt-1]) <- alpha.lambda + beta.lambda*lambda.var[tt-1] # note lambda[1] pertains to growth from t = 1 to t = 2.
+    for (jj in 1:JJ){ # for each colony in DA set
+      n[jj, tt] ~ dpois(lambda.t[tt-1]*z[tt-1, jj]) # reproduce if real 
+    }
+    n.tot[tt] <- sum(n[,tt])
+    for (jj in 1:JJ){
+      o.i[jj,tt] ~ dcat(n[, tt]) # generate offspring indices for offspring colonies
+      c.j0[tt, jj, 1] ~ dnorm(c.j0[tt-1, o.i[jj,tt], 1], sigma.d) # place new colonies into t X Y array
+      c.j0[tt, jj, 2] ~ dnorm(c.j0[tt-1, o.i[jj,tt], 2], sigma.d)
+      in.hab[tt, jj] <- mask.raster[trunc(c.j0[tt, jj, 2] / raster.scale)+1, trunc(c.j0[tt, jj, 1] / raster.scale)+1] # in suitable habitat
+      da[tt, jj] ~ dbern(n.tot[tt]/JJ) # which are real in this time step
+      z[tt, jj] <- in.hab[tt, jj] * da[tt, jj] # real and inside habitat
+    }
+  }
+  # Calculate likelihoods given colony dynamics
   for (ii in 1:II){ # step through survey sites and calculate likelihoods
     # probability of presence, from any colony
     for (jj in 1:JJ){
       # distance from colony to site
-      d.ij[ii, jj] <- sqrt((s.0[ii, 1] - c.j0[jj, 1])^2 + (s.0[ii, 2] - c.j0[jj, 2])^2)
+      d.ij[ii, jj] <- sqrt((s.0[ii, 1] - c.j0[t.id[ii], jj, 1])^2 + (s.0[ii, 2] - c.j0[t.id[ii], jj, 2])^2)
       # expected encounter rate from each colony
-      lambda.ij[ii, jj] <- z[jj]*lambda.0*exp(-d.ij[ii, jj]^2/(2*sigma^2)) # real or not, and number
+      lambda.ij[ii, jj] <- z[t.id[ii], jj]*lambda.0*exp(-d.ij[ii, jj]^2/(2*sigma.u^2)) # real or not, and number
     }
     # sum of expected rate
     lambda.i[ii] <- sum(lambda.ij[ii,]) + 0.001 # avoiding zeros here avoids issues with initialisation of model.
