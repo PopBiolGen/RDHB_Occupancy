@@ -58,7 +58,7 @@ beta.lambda <- 0.1 # slope of the growth rate function
 sigma.d <- 900
 
 # some setup variables
-nt <- 1 # number of time steps
+nt <- 3 # number of time steps
 x.min <- y.min <- 0 # possible spatial extent of the species across all time, bounding box
 x.max <- y.max <- 20000 # in metres
 
@@ -113,7 +113,7 @@ sim.dat <- generate_data(generate_surveys(), c.0)
 # Grows the population according to lambda.t and sigma.d
 pp_growth <- function(c.t, lambda.t, sigma.d){
   n.0 <- nrow(c.t)
-  n.1 <- rpois(n.0, lambda.t[tt-1]) # realised number of daughter colonies
+  n.1 <- rpois(n.0, lambda.t) # realised number of daughter colonies
   inds <- rep(1:n.0, times = n.1)
   c.1 <- c.t[inds,] # new matrix of colonies, pre dispersal
   n.1 <- nrow(c.1)
@@ -134,5 +134,3 @@ if (nt > 1){
      sim.dat <- rbind(sim.dat, generate_data(s.t, c.t, t = tt))
   }  
 }
-
-##### Up to here #####
