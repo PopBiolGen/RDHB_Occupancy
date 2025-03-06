@@ -11,13 +11,13 @@ max.c <- ceiling(10*sum(z0)) # maximum colonies (for data augmentation)
 n.s <- tapply(sim.dat[,"time"], sim.dat[,"time"], length) # n surveys in each time period
 
 data.list <- list(
-  nt = max(sim.dat[, "time"]), # number of time steps
+  nt = max(sim.dat[, "time"]), # number of time steps, T in model description
   s.0 = sim.dat[, c("x", "y")], # survey site locations (matrix of X and Y coordinates)
   sur.lev.var = sim.dat[, "det.var"], # detection covariate (vector of length II)
   t.id = sim.dat[, "time"], # time step
   obs.i = sim.dat[, "obs"], # presence/absence observations
   lambda.var = lambda.x, # covariate determining lambda in each time step
-  lambda.0 = 300, # as data for now (note this is a different lambda to above; need to fix names)
+  u.0 = 300, # as data for now (note this is a different lambda to above; need to fix names)
   x.min = 0,
   y.min = 0, # possible spatial extent of the species across all time, bounding box
   x.max = 20000,
@@ -27,7 +27,7 @@ data.list <- list(
   g0.x.max = 12500,
   g0.y.max = 12500,
   II = nrow(sim.dat), # total number of surveys
-  JJ = max.c, # maximum number of colonies (data-augmentation approach)
+  M = max.c, # maximum number of colonies (data-augmentation approach)
   mask.raster = mask.raster, # habitat raster matrix
   raster.scale = raster.scale # scalar giving size of raster pixels
 )
@@ -38,7 +38,7 @@ init.list <- list(
   alpha.det = 0,
   beta.det = 1,
   r0 = 5000,
-  da = matrix(1, nrow = max(sim.dat[, "time"]), ncol = max.c),
+  Z = matrix(1, nrow = max(sim.dat[, "time"]), ncol = max.c),
   pres = rep(1, nrow(sim.dat)),
   sigma.u = 1000,
   sigma.d = 1000)
@@ -55,9 +55,9 @@ params <- c("psi",
             "g0")
 
 # mcmc settings
-nb <- 5
-ni <- 10
-nc = 3
+nb <- 5000
+ni <- 2000
+nc <- 3
 
 # the model
 a <- jags.model(file = "src/model-files/pp-JAGS.txt", 
