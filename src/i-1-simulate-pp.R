@@ -50,10 +50,12 @@ sim.dat <- generate_data(generate_surveys(), c.0)
 # Time step > 1
 if (nt > 1){
   c.t <- c.0
+  print(c.t)
   lambda.x <- rnorm(nt) # some covariate of lambda
   lambda.t <- exp(alpha.lambda + beta.lambda*lambda.x) #lambda as a function of time step
   for (tt in 2:nt){
      c.t <- pp_growth(c.t, lambda.t[tt], sigma.d = sigma.d)
+     print(c.t)
      s.t <- generate_surveys()
      sim.dat <- rbind(sim.dat, generate_data(s.t, c.t, t = tt))
   }  
