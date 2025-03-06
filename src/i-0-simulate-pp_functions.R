@@ -47,7 +47,7 @@ generate_surveys <- function(){
   s.i0.x <- runif(n = s.n, min = x.min, max = x.max) # place surveys
   s.i0.y <- runif(n = s.n, min = y.min, max = y.max)
   s.0 <- cbind(s.i0.x, s.i0.y) # matrix of survey locations
-  s.0 <- s.0[raster_to_points(s.0, mask.raster, rast.scale = x.max/2)==1, ] # remove those outside mask
+  #s.0 <- s.0[raster_to_points(s.0, mask.raster, rast.scale = x.max/2)==1, ] # remove those outside mask
   s.0
 }
 
@@ -75,6 +75,7 @@ pp_growth <- function(c.t, lambda.t, sigma.d){
   n.1 <- nrow(c.1)
   c.1[,1] <- rnorm(n = n.1, mean = c.1[,1], sd = sigma.d) # disperse with gaussian kernel
   c.1[,2] <- rnorm(n = n.1, mean = c.1[,2], sd = sigma.d)
-  z0 <- raster_to_points(c.1, mask.raster, rast.scale = x.max/2) #
-  c.1[z0==1,] # remove those outside mask
+  #z0 <- raster_to_points(c.1, mask.raster, rast.scale = x.max/2) #
+  #c.1[z0==1,] # remove those outside mask
+  c.1
 }

@@ -27,9 +27,7 @@ data.list <- list(
   g0.x.max = 12500,
   g0.y.max = 12500,
   II = nrow(sim.dat), # total number of surveys
-  M = max.c, # maximum number of colonies (data-augmentation approach)
-  mask.raster = mask.raster, # habitat raster matrix
-  raster.scale = raster.scale # scalar giving size of raster pixels
+  M = max.c # maximum number of colonies (data-augmentation approach)
 )
 
 # initials
@@ -38,7 +36,7 @@ init.list <- list(
   alpha.det = 0,
   beta.det = 1,
   r0 = 5000,
-  Z = matrix(1, nrow = max(sim.dat[, "time"]), ncol = max.c),
+  Z = matrix(1, nrow = max.c, ncol = max(sim.dat[, "time"])),
   pres = rep(1, nrow(sim.dat)),
   sigma.u = 1000,
   sigma.d = 1000)
@@ -55,8 +53,8 @@ params <- c("psi",
             "g0")
 
 # mcmc settings
-nb <- 5000
-ni <- 2000
+nb <- 5
+ni <- 5
 nc <- 3
 
 # the model
