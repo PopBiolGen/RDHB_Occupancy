@@ -7,8 +7,8 @@ model{
   beta.det ~ dnorm(0, 1/4) # slope of some linear effect on detection
   sigma.u ~ dunif(100, 1000) # parameter affecting spread of the foraging density kernel
   sigma.d ~ dunif(100, 1000) # parameter affecting spread of the dispersal kernel
-  alpha.lambda ~ dnorm(0, 1/4) # intercept for log mean growth rate
-  beta.lambda ~  dnorm(0, 1/4) # slope for linear effect on log mean growth rate
+  l.lambda ~ dnorm(0, 1/4) # intercept for log mean growth rate
+  lambda <- exp(l.lambda)
   
   # place ground 0
   g0[1, 1] ~ dunif(g0.x.min, g0.x.max) # ground zero x
@@ -31,9 +31,8 @@ model{
 
   # colony dynamics
   for (tt in 2:nt){ # step through time beyond t = 1
-    log(lambda.t[tt-1]) <- alpha.lambda + beta.lambda*lambda.var[tt-1] # note lambda[1] pertains to growth from t = 1 to t = 2.
     for (jj in 1:M){ # for each colony in DA set
-      n[jj, tt] ~ dpois(lambda.t[tt-1]*Z[jj, tt-1]) # reproduce if real 
+      n[jj, tt] ~ dpois(lambda*Z[jj, tt-1]) # reproduce if real 
     }
     n.tot[tt] <- sum(n[,tt])
     for (jj in 1:M){

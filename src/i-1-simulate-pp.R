@@ -12,8 +12,7 @@ beta.det <- 2 # slope of some linear effect on detection
 #sd.extent <- 30 # standard deviation of random effect on change in extent per time period
 sigma.u <- 500 # parameter affecting spread of the density kernel
 u.0 <- 300 # expected number of encounters at 0 distance from a colony
-alpha.lambda <- log(1.5) # intercept of growth rate function
-beta.lambda <- 0.1 # slope of the growth rate function
+lambda <- 1.5 # constant growth rate
 sigma.d <- 900
 
 # some setup variables
@@ -51,10 +50,8 @@ sim.dat <- generate_data(generate_surveys(), c.0)
 if (nt > 1){
   c.t <- c.0
   print(c.t)
-  lambda.x <- rnorm(nt) # some covariate of lambda
-  lambda.t <- exp(alpha.lambda + beta.lambda*lambda.x) #lambda as a function of time step
   for (tt in 2:nt){
-     c.t <- pp_growth(c.t, lambda.t[tt], sigma.d = sigma.d)
+     c.t <- pp_growth(c.t, lambda, sigma.d = sigma.d)
      print(c.t)
      s.t <- generate_surveys()
      sim.dat <- rbind(sim.dat, generate_data(s.t, c.t, t = tt))

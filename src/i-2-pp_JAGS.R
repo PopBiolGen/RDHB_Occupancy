@@ -16,8 +16,7 @@ data.list <- list(
   sur.lev.var = sim.dat[, "det.var"], # detection covariate (vector of length II)
   t.id = sim.dat[, "time"], # time step
   obs.i = sim.dat[, "obs"], # presence/absence observations
-  lambda.var = lambda.x, # covariate determining lambda in each time step
-  u.0 = 300, # as data for now (note this is a different lambda to above; need to fix names)
+  u.0 = 300, # as data for now
   x.min = 0,
   y.min = 0, # possible spatial extent of the species across all time, bounding box
   x.max = 20000,
@@ -48,8 +47,7 @@ params <- c("psi",
             "beta.det",
             "sigma.u",
             "sigma.d",
-            "alpha.lambda",
-            "beta.lambda",
+            "lambda",
             "g0")
 
 # mcmc settings
