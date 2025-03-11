@@ -7,7 +7,7 @@ library(MCMCvis)
 source("src/i-1-simulate-pp.R")
 
 # Data
-max.c <- ceiling(10*sum(z0)) # maximum colonies (for data augmentation)
+max.c <- 25 # maximum colonies (for data augmentation)
 n.s <- tapply(sim.dat[,"time"], sim.dat[,"time"], length) # n surveys in each time period
 
 data.list <- list(
@@ -53,8 +53,8 @@ params <- c("psi",
             "g0")
 
 # mcmc settings
-nb <- 5
-ni <- 5
+nb <- 5000
+ni <- 2000
 nc <- 3
 
 # the model
@@ -75,4 +75,6 @@ gelman.diag(b)
 summary(b)
 
 temp <- MCMCchains(b)
-pairs(temp)
+pdf(file = "out/pairs-parameters.pdf")
+  pairs(temp)
+dev.off()
