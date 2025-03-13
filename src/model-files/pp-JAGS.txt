@@ -44,19 +44,20 @@ model{
   }
   # Calculate likelihoods given colony dynamics
   for (ii in 1:II){ # step through survey sites and calculate likelihoods
-    # probability of presence, from any colony
+    # density at each site, from all colonies
     for (jj in 1:M){
       # distance from colony to site
       d.ij[ii, jj] <- sqrt((s.0[ii, 1] - c.j0[t.id[ii], jj, 1])^2 + (s.0[ii, 2] - c.j0[t.id[ii], jj, 2])^2)
-      # expected encounter rate from each colony
-      lambda.ij[ii, jj] <- Z[jj, t.id[ii]]*exp(-d.ij[ii, jj]^2/(2*sigma.u^2)) # real or not, and number
+      # expected density from each colony
+      u.ij[ii, jj] <- Z[jj, t.id[ii]]*exp(-d.ij[ii, jj]^2/(2*sigma.u^2)) # real or not, and density with distance
     }
-    # sum of expected rate
-    lambda.i[ii] <- u.0*sum(lambda.ij[ii,]) + 0.001 # avoiding zeros here avoids issues with initialisation of model.
-    # probability of presence at site across all (real) colonies
-    prob.pres.i[ii] <- 1 - exp(-lambda.i[ii]) # collapse poisson expectation to binary
-    pres[ii] ~ dbern(prob.pres.i[ii])
+    # sum of expected number
+    u.i[ii] <- u.0*sum(u.ij[ii,]) + 0.001 # avoiding zeros here avoids issues with initialisation of model.
+    # actual number at each site
+    v[ii] ~ dpois(u.i[ii])
+    # individual-level detection
     logit(det[ii]) <- alpha.det + beta.det * sur.lev.var[ii]
-    obs.i[ii] ~ dbern(pres[ii] * det[ii])
+    gamma[ii] <- 1 - (1-det[ii])^v[ii]
+    obs.i[ii] ~ dbern(gamma[ii])
   }
 }

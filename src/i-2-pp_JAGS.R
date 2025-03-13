@@ -36,7 +36,7 @@ init.list <- list(
   beta.det = 1,
   r0 = 5000,
   Z = matrix(1, nrow = max.c, ncol = max(sim.dat[, "time"])),
-  pres = rep(1, nrow(sim.dat)),
+  v = rep(1, nrow(sim.dat)),
   sigma.u = 1000,
   sigma.d = 1000)
 
