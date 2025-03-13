@@ -34,12 +34,16 @@ raster_to_points <- function(pts, hab.rast, rast.scale){
   hab.rast[indices[, 2:1]] # returns a vector of raster values: one for each point
 }
 
-# function to calculate probability of at least one being present from distances (from AHM 10.8)
-spatial_presence <- function(distance, sigma.u, u.0){
-  lambda.ij <- u.0*exp(-distance^2/(2*sigma.u^2)) # poisson encounter rate with distance
-  lambda.i <- apply(lambda.ij, 1, sum) # sum over colonies
-  prob.pres.i <- 1-exp(-lambda.i) # collapsed to a binary
-  prob.pres.i
+# function to calculate density accruing to each survey location 
+spatial_density <- function(distance, sigma.u, u.0){
+  dens.ij <- u.0*exp(-distance^2/(2*sigma.u^2)) # density with distance
+  dens.i <- apply(dens.ij, 1, sum) # sum over colonies
+  rpois(n = length(dens.i), lambda = dens.i) # stochastic realisation
+}
+
+# probability of observing at least one individual
+observation_probability <- function(psi, n.inds){
+  1 - (1-psi)^n.inds
 }
 
 # generates surveys from global variables
@@ -61,9 +65,10 @@ generate_data <- function(s.t, c.t, t = 1) {
   
   d.ij <- pairwise_distances(s.t, c.t) # distances between surveys and colonies
   
-  p.pres.i <- spatial_presence(d.ij, sigma.u, u.0)
-  obs.i <- rbinom(n = length(p.pres.i), size = 1, prob = p.pres.i*det) # generate observations
-  cbind(time = rep(t, length(p.pres.i)), x = s.t[,1], y = s.t[,2], det.var = sur.lev.var, obs = obs.i) # output
+  v.i <- spatial_density(d.ij, sigma.u, u.0) # individuals at survey location i
+  o.prob <- observation_probability(det, v.i)
+  obs.i <- rbinom(n = length(o.prob), size = 1, prob = o.prob) # generate observations
+  cbind(time = rep(t, length(o.prob)), x = s.t[,1], y = s.t[,2], det.var = sur.lev.var, obs = obs.i) # output
 }
 
 # Grows the population according to lambda.t and sigma.d

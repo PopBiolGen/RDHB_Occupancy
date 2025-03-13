@@ -53,16 +53,22 @@ $$
 u_i = u_0\sum_j K_u(d_{i,j})
 $$
 
-gives the density of individuals at each survey location.  We can then treat the number of individuals present at $s_{i,t}$ as a Poisson distributed variable.  In the common event that we do not have count data, we can express the poisson rate as a probability that at least one individual is present at $s_{i,t}$: $\gamma_{i,t} = 1-e^{-u_{i,t}}$.  We can then treat the presence/absence of at least one individual as a latent variable:
+gives the density of individuals at each survey location.  We then treat the actual number of individuals at a survey location as a draw from a poisson distribution:
 
 $$
-p_{i,t} \sim \text{Bernoulli}(\gamma_{i,t})
+v_i \sim \text{Poisson}(u_i)
 $$
 
-We can then proceed to the likelihood for each of our observations by defining a detection function yielding the probability of detection given presence, $\psi_{i,t}$.  This leads us, finally to the full likelihood for each of our observations:
+We can then proceed to the likelihood for each of our observations by defining a detection function yielding the probability of detecting an individual, $\psi_{i,t}$, which is a function of survey-level variables. The probability of detecting at least one individual is then:
 
 $$
-o_{i,t} \sim \text{Bernoulli}(p_{i,t}\psi_{i,t})
+\gamma_{i, t} = 1 - (1-\psi_{i,t})^{v_i}
+$$
+
+This leads us, finally, to the full likelihood for each of our observations:
+
+$$
+o_{i,t} \sim \text{Bernoulli}(\gamma_{i,t})
 $$
 
 ## Implementation

@@ -40,7 +40,7 @@ c.0.y <- runif(n = c.n, min = y.min, max = y.max)
 c.0 <- cbind(c.0.x, c.0.y) # matrix of colony locations
 z0 <- pairwise_distances(c.0, cbind(g0.x, g0.y)) < r0 # distances from g0 < r0 (i.e. which colonies are real.)
 #z0 <- z0 * raster_to_points(c.0, mask.raster, rast.scale = x.max/2)
-c.0 <- c.0[z0==1,]
+c.0 <- c.0[z0==1, , drop = FALSE]
 s.n <- survey.density*x.max*y.max # number of surveys
 
 # Time step 1
