@@ -6,13 +6,13 @@ model{
   alpha.det ~ dnorm(0, 1/4) # intercept for log-odds of detection
   beta.det ~ dnorm(0, 1/4) # slope of some linear effect on detection
   sigma.u ~ dunif(100, 1000) # parameter affecting spread of the foraging density kernel
-  sigma.d ~ dunif(100, 1000) # parameter affecting spread of the dispersal kernel
+  sigma.d ~ dunif(100, 2000) # parameter affecting spread of the dispersal kernel
   l.lambda ~ dnorm(0, 1/4) # intercept for log mean growth rate
   lambda <- exp(l.lambda)
   
   # place ground 0
-  g0[1, 1] ~ dunif(g0.x.min, g0.x.max) # ground zero x
-  g0[1, 2] ~ dunif(g0.y.min, g0.y.max) # ground zero y
+  g0[1] ~ dunif(g0.x.min, g0.x.max) # ground zero x
+  g0[2] ~ dunif(g0.y.min, g0.y.max) # ground zero y
   
   # initialise colony locations
   for (jj in 1:M){ # step through potential colonies at time = 1
@@ -22,7 +22,7 @@ model{
     
     # find which are within extent radius
       # Compute the pairwise distances
-    in.ex[jj] <- step(r0 - sqrt((c.j0[1, jj, 1]-g0[1, 1])^2 + (c.j0[1, jj, 2]-g0[1, 2])^2))
+    in.ex[jj] <- step(r0 - sqrt((c.j0[1, jj, 1]-g0[1])^2 + (c.j0[1, jj, 2]-g0[2])^2))
     
     
     # which of these Z colonies are real?
