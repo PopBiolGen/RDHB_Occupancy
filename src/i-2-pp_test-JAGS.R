@@ -1,4 +1,5 @@
 # A JAGS model to estimate parameters of the pp model.
+# testing the model on simulated data
 
 library(rjags)
 library(MCMCvis)
