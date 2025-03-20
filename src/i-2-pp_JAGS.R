@@ -7,7 +7,7 @@ library(MCMCvis)
 source("src/i-1-simulate-pp.R")
 
 # Data
-max.c <- 25 # maximum colonies (for data augmentation)
+max.c <- 50 # maximum colonies (for data augmentation)
 n.s <- tapply(sim.dat[,"time"], sim.dat[,"time"], length) # n surveys in each time period
 
 data.list <- list(
@@ -21,34 +21,26 @@ data.list <- list(
   y.min = 0, # possible spatial extent of the species across all time, bounding box
   x.max = 20000,
   y.max = 20000, # in metres
-  g0.x.min = 7500, # bounding box for possible location of ground zero
-  g0.y.min = 7500,
-  g0.x.max = 12500,
-  g0.y.max = 12500,
   II = nrow(sim.dat), # total number of surveys
   M = max.c # maximum number of colonies (data-augmentation approach)
 )
 
 # initials
 init.list <- list(
-  g0 = matrix(c(8000, 9000), nrow = 1),
   alpha.det = 0,
   beta.det = 1,
-  r0 = 5000,
   Z = matrix(1, nrow = max.c, ncol = max(sim.dat[, "time"])),
   v = rep(1, nrow(sim.dat)),
-  sigma.u = 1000,
-  sigma.d = 1000)
+  sigma.u = 500,
+  sigma.d = 900)
 
 # parameters to monitor
 params <- c("psi",
-            "r0",
             "alpha.det",
             "beta.det",
             "sigma.u",
             "sigma.d",
-            "lambda",
-            "g0")
+            "lambda")
 
 # mcmc settings
 nb <- 5000

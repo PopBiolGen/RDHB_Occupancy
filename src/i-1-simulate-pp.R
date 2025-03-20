@@ -16,14 +16,14 @@ lambda <- 1.5 # constant growth rate
 sigma.d <- 900
 
 # some setup variables
-nt <- 3 # number of time steps
+nt <- 1 # number of time steps
 x.min <- y.min <- 0 # possible spatial extent of the species across all time, bounding box
 x.max <- y.max <- 20000 # in metres
 
 g0.x.min <- g0.y.min <- 7500 # bounding box for possible location of ground zero
 g0.x.max <- g0.y.max <- 12500
 
-survey.density <- 30*density # density of survey points
+survey.density <- 15*density # density of survey points
 
 #mask.raster <- matrix(c(1,0,1,1), nrow = 2) # make a "raster" denoting available habitat (a triangle in this case)
 #raster.scale <- x.max/nrow(mask.raster)
