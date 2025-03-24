@@ -12,7 +12,6 @@ lambda <- 1.5 # constant growth rate
 sigma.d <- 900
 
 # some setup variables
-nt <- 1 # number of time steps
 x.min <- y.min <- 0 # possible spatial extent of the species across all time, bounding box
 x.max <- y.max <- 20000 # in metres
 

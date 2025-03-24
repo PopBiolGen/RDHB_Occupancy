@@ -1,4 +1,4 @@
-# A JAGS model to estimate parameters of the pp model.
+# A JAGS model to estimate parameters of the pp static model.
 # testing the model on simulated data
 
 library(rjags)
@@ -9,14 +9,12 @@ nt <- 1 # number of time steps
 source("src/i-1-simulate-pp.R")
 
 # Data
-max.c <- 50 # maximum colonies (for data augmentation)
+max.c <- 10 # maximum colonies (for data augmentation)
 n.s <- tapply(sim.dat[,"time"], sim.dat[,"time"], length) # n surveys in each time period
 
 data.list <- list(
-  nt = max(sim.dat[, "time"]), # number of time steps, T in model description
   s.0 = sim.dat[, c("x", "y")], # survey site locations (matrix of X and Y coordinates)
   sur.lev.var = sim.dat[, "det.var"], # detection covariate (vector of length II)
-  t.id = sim.dat[, "time"], # time step
   obs.i = sim.dat[, "obs"], # presence/absence observations
   u.0 = 300, # as data for now
   x.min = 0,
@@ -32,16 +30,13 @@ init.list <- list(
   psi = 0.1,
   alpha.sig = log(100),
   beta.sig = log(1),
-  l.lambda = 0,
-  Z = matrix(1, nrow = max.c, ncol = max(sim.dat[, "time"])),
-  sigma.d = 900)
+  Z = rep(1, max.c))
 
 # parameters to monitor
 params <- c("psi",
             "alpha.sig",
             "beta.sig",
-            "sigma.d",
-            "lambda")
+            "sigma.u")
 
 # mcmc settings
 nb <- 5000
@@ -49,7 +44,7 @@ ni <- 2000
 nc <- 3
 
 # the model
-a <- jags.model(file = "src/model-files/pp-JAGS.txt", 
+a <- jags.model(file = "src/model-files/pp-static-JAGS.txt", 
                 data = data.list, 
                 inits = init.list,
                 n.chains = nc)
