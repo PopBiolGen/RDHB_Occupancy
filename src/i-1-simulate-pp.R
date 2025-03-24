@@ -5,12 +5,8 @@ source("src/i-0-simulate-pp_functions.R")
 # some parameters
 density <- 1e-7 # colonies per m^2
 s.rad <- 3 # spot search effective radius
-alpha.det <- 0 # intercept for log-odds of detection
-beta.det <- 2 # slope of some linear effect on detection
-#alpha.extent <- 50 # intercept for change in extent per time period
-#beta.extent <- -10 # effect of control on extent growth per time period
-#sd.extent <- 30 # standard deviation of random effect on change in extent per time period
-sigma.u <- 500 # parameter affecting spread of the density kernel
+alpha.sig <- log(500) # log of mean sigma for the density kernel
+beta.sig <- log(2)/2 # slope of some linear effect on sigma
 u.0 <- 300 # expected number of encounters at 0 distance from a colony
 lambda <- 1.5 # constant growth rate
 sigma.d <- 900
@@ -44,19 +40,21 @@ c.0 <- c.0[z0==1, , drop = FALSE]
 s.n <- survey.density*x.max*y.max # number of surveys
 
 # Time step 1
-sim.dat <- generate_data(generate_surveys(), c.0)
+sim.dat <- generate_data(generate_surveys(), c.0, alpha.sig, beta.sig)
+c.mat <- data.frame(cbind(c.0, gen = 1))
 
 # Time step > 1
 if (nt > 1){
   c.t <- c.0
-  print(c.t)
   for (tt in 2:nt){
      c.t <- pp_growth(c.t, lambda, sigma.d = sigma.d)
-     print(c.t)
      s.t <- generate_surveys()
-     sim.dat <- rbind(sim.dat, generate_data(s.t, c.t, t = tt))
+     sim.dat <- rbind(sim.dat, generate_data(s.t, c.t, alpha.sig, beta.sig, t = tt))
+     c.mat <- rbind(c.mat, cbind(c.t, gen = tt))
   }  
 }
 
+print(c.mat)
 plot(y~x, col = (obs*time+1), data = sim.dat)
+points(c.0.y~c.0.x, col = (gen+1), data = c.mat, pch = 12, cex =2)
 legend('topleft', pch = 21, col = 1:(nt+1), legend = c("absent", 1:nt), title = "Time step")

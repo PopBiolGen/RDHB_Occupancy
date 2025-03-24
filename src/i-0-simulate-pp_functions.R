@@ -35,15 +35,15 @@ raster_to_points <- function(pts, hab.rast, rast.scale){
 }
 
 # function to calculate density accruing to each survey location 
-spatial_density <- function(distance, sigma.u, u.0){
-  dens.ij <- u.0*exp(-distance^2/(2*sigma.u^2)) # density with distance
+spatial_density <- function(distance, sigma.vec, u.0){
+  dens.ij <- u.0*exp(-distance^2/(2*sigma.vec^2)) # density with distance
   dens.i <- apply(dens.ij, 1, sum) # sum over colonies
-  rpois(n = length(dens.i), lambda = dens.i) # stochastic realisation
+  dens.i
 }
 
 # probability of observing at least one individual
-observation_probability <- function(psi, n.inds){
-  1 - (1-psi)^n.inds
+observation_probability <- function(n.inds){
+  1 - exp(-n.inds) # probability of non-zero from poisson
 }
 
 # generates surveys from global variables
@@ -58,15 +58,15 @@ generate_surveys <- function(){
 # generate data
 ## time step 1
 # function that uses global variables to generate data from current s, and c.
-generate_data <- function(s.t, c.t, t = 1) {
+generate_data <- function(s.t, c.t, alpha.sig, beta.sig, t = 1) {
   sur.lev.var <- rnorm(nrow(s.t)) # survey level variable (affects detection)
-  logit.det <- alpha.det + beta.det*sur.lev.var # linear model on detection
-  det <- plogis(logit.det) # conditional detection probability
+  log.sigma <- alpha.sig + beta.sig*sur.lev.var # linear model on sigma
+  sig.vec <- exp(log.sigma) # sigma for each site
   
   d.ij <- pairwise_distances(s.t, c.t) # distances between surveys and colonies
   
-  v.i <- spatial_density(d.ij, sigma.u, u.0) # individuals at survey location i
-  o.prob <- observation_probability(det, v.i)
+  v.i <- spatial_density(d.ij, sig.vec, u.0) # individuals at survey location i
+  o.prob <- observation_probability(v.i)
   obs.i <- rbinom(n = length(o.prob), size = 1, prob = o.prob) # generate observations
   cbind(time = rep(t, length(o.prob)), x = s.t[,1], y = s.t[,2], det.var = sur.lev.var, obs = obs.i) # output
 }

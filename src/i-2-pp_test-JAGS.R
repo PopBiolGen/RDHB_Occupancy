@@ -28,18 +28,17 @@ data.list <- list(
 
 # initials
 init.list <- list(
-  alpha.det = 0,
-  beta.det = 1,
+  psi = 0.1,
+  alpha.sig = log(100),
+  beta.sig = log(1),
+  l.lambda = 0,
   Z = matrix(1, nrow = max.c, ncol = max(sim.dat[, "time"])),
-  v = rep(1, nrow(sim.dat)),
-  sigma.u = 500,
   sigma.d = 900)
 
 # parameters to monitor
 params <- c("psi",
-            "alpha.det",
-            "beta.det",
-            "sigma.u",
+            "alpha.sig",
+            "beta.sig",
             "sigma.d",
             "lambda")
 

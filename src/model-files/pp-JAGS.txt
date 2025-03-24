@@ -2,9 +2,8 @@
 model{
   #priors
   psi ~ dunif(0, 1) # probability of a DA colony being real
-  alpha.det ~ dnorm(0, 1/4) # intercept for log-odds of detection
-  beta.det ~ dnorm(0, 1/4) # slope of some linear effect on detection
-  sigma.u ~ dunif(100, 1000) # parameter affecting spread of the foraging density kernel
+  alpha.sig ~ dnorm(6.2, 1000) # intercept for log-odds of detection
+  beta.sig ~ dnorm(0, 1/4) # slope of some linear effect on detection
   sigma.d ~ dunif(100, 2000) # parameter affecting spread of the dispersal kernel
   l.lambda ~ dnorm(0, 1/4) # intercept for log mean growth rate
   lambda <- exp(l.lambda)
@@ -35,20 +34,19 @@ model{
   }
   # Calculate likelihoods given colony dynamics
   for (ii in 1:II){ # step through survey sites and calculate likelihoods
+    # sigma for each survey (attractiveness of site)
+    log(sigma.u[ii]) <- alpha.sig + beta.sig*sur.lev.var[ii]
     # density at each site, from all colonies
     for (jj in 1:M){
       # distance from colony to site
       d.ij[ii, jj] <- sqrt((s.0[ii, 1] - c.j0[t.id[ii], jj, 1])^2 + (s.0[ii, 2] - c.j0[t.id[ii], jj, 2])^2)
       # expected density from each colony
-      u.ij[ii, jj] <- Z[jj, t.id[ii]]*exp(-d.ij[ii, jj]^2/(2*sigma.u^2)) # real or not, and density with distance
+      u.ij[ii, jj] <- Z[jj, t.id[ii]]*exp(-d.ij[ii, jj]^2/(2*sigma.u[ii]^2)) # real or not, and density with distance
     }
     # sum of expected number
     u.i[ii] <- u.0*sum(u.ij[ii,]) + 0.001 # avoiding zeros here avoids issues with initialisation of model.
-    # actual number at each site
-    v[ii] ~ dpois(u.i[ii])
-    # individual-level detection
-    logit(det[ii]) <- alpha.det + beta.det * sur.lev.var[ii]
-    gamma[ii] <- 1 - (1-det[ii])^v[ii]
-    obs.i[ii] ~ dbern(gamma[ii])
+    # probability of at least one at the site
+    det[ii] <- 1 - exp(-u.i[ii])
+    obs.i[ii] ~ dbern(det[ii])
   }
 }
