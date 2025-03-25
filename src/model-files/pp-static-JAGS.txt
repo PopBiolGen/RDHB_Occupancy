@@ -1,0 +1,50 @@
+# Point process abundance model in JAGS
+# static model -- for a single time slice of the data
+model{
+  #priors
+  psi ~ dunif(0, 1) # probability of a DA colony being real
+  alpha.sig ~ dunif(log(100), log(1000)) # intercept for log sigma
+  beta.1.sig ~ dnorm(0, 1/4) # slope of some linear effect on detection
+  beta.2.sig ~ dnorm(0, 1/4) # slope of some linear effect on detection
+  l.u.0 ~ dnorm(log(300), 1/log(4)^2)
+  u.0 <- exp(l.u.0)
+  
+  # foraging kernel
+  for (ff in 1:n.fd){
+    fd[ff] ~ dnorm(0, 1/exp(alpha.sig)^2)
+  }
+  
+  # initialise colony locations
+  for (jj in 1:M){ # step through potential colonies
+    # place colonies
+    c.j0[jj, 1] ~ dunif(x.min, x.max) # place initial colonies into t X Y array
+    c.j0[jj, 2] ~ dunif(y.min, y.max)
+    
+    # which of these Z colonies are real?
+    Z[jj] ~ dbern(psi)  # fraction of data augmented colonies
+  }
+
+  # Calculate likelihoods given colony dynamics
+  for (ii in 1:II){ # step through survey sites and calculate likelihoods
+    # sigma for each survey (attractiveness of site)
+    log(sigma.u[ii]) <- alpha.sig + beta.1.sig*sur.lev.var.1[ii] + beta.2.sig*sur.lev.var.2[ii]
+    # density at each site, from all colonies
+    for (jj in 1:M){
+      # distance from colony to site
+      d.ij[ii, jj] <- sqrt((s.0[ii, 1] - c.j0[jj, 1])^2 + (s.0[ii, 2] - c.j0[jj, 2])^2)
+      # expected density from each colony
+      u.ij[ii, jj] <- Z[jj]*exp(-d.ij[ii, jj]^2/(2*sigma.u[ii]^2)) # real or not, and density with distance
+    }
+    # sum of expected number
+    u.i[ii] <- u.0*sum(u.ij[ii,])
+    # probability of at least one at the site
+    det[ii] <- (1 - exp(-u.i[ii]) + 0.001)*0.999 # # avoiding 1/0 here avoids issues with initialisation of model.
+    obs.i[ii] ~ dbern(det[ii])
+  }
+  # output variables
+  for (jj in 1:M){
+    # inferred locations of colonies
+    loc[jj, 1] <- c.j0[jj, 1] * Z[jj]
+    loc[jj, 2] <- c.j0[jj, 2] * Z[jj]
+  }
+}
