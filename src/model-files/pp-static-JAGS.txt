@@ -6,8 +6,7 @@ model{
   alpha.sig ~ dunif(log(100), log(1000)) # intercept for log sigma
   beta.1.sig ~ dnorm(0, 1/4) # slope of some linear effect on detection
   beta.2.sig ~ dnorm(0, 1/4) # slope of some linear effect on detection
-  l.u.0 ~ dnorm(log(300), 1/log(4)^2)
-  u.0 <- exp(l.u.0)
+  u.0 ~ dunif(0,1)
   
   # foraging kernel
   for (ff in 1:n.fd){
@@ -33,12 +32,12 @@ model{
       # distance from colony to site
       d.ij[ii, jj] <- sqrt((s.0[ii, 1] - c.j0[jj, 1])^2 + (s.0[ii, 2] - c.j0[jj, 2])^2)
       # expected density from each colony
-      u.ij[ii, jj] <- Z[jj]*exp(-d.ij[ii, jj]^2/(2*sigma.u[ii]^2)) # real or not, and density with distance
+      u.ij[ii, jj] <- Z[jj]*u.0*exp(-d.ij[ii, jj]^2/(2*sigma.u[ii]^2)) # real or not, and density with distance
     }
-    # sum of expected number
-    u.i[ii] <- u.0*sum(u.ij[ii,])
-    # probability of at least one at the site
-    det[ii] <- (1 - exp(-u.i[ii]) + 0.001)*0.999 # # avoiding 1/0 here avoids issues with initialisation of model.
+    # detection probability from all sources
+    det[ii] <- (1 - prod(1-u.ij[ii,])+0.0001)*0.999 # avoiding 1/0 here avoids issues with initialisation of model.
+    # probability of at least one detection at the site
+    #det[ii] <- (1 - exp(-u.i[ii]) + 0.001)*0.999 # # avoiding 1/0 here avoids issues with initialisation of model.
     obs.i[ii] ~ dbern(det[ii])
   }
   # output variables
