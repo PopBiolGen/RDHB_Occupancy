@@ -43,9 +43,13 @@ ggplot(density_df, aes(x=x, y=y)) +
   geom_raster(aes(fill = density), interpolate = TRUE) +
   geom_contour(aes(z = density), color = "black", alpha = 0.5) +
   scale_fill_viridis_c(alpha = 0.4) +
-  geom_point(data = df.mr, 
+  geom_point(data = df.mr[df.mr$presence==0,], 
              aes(x = X, y = Y), 
-             colour = (df.mr$presence+1),
+             colour = "black",
+             inherit.aes = FALSE) +
+  geom_point(data = df.mr[df.mr$presence==1,], 
+             aes(x = X, y = Y), 
+             colour = "red",
              inherit.aes = FALSE) +
   theme_minimal() +
   labs(title = "2D Kernel Density Estimation",
