@@ -24,10 +24,10 @@ data.list <- list(
 # initials
 init.list <- list(
   psi = 0.1,
-  alpha.sig = log(100),
-  beta.1.sig = log(1),
-  beta.2.sig = log(1),
-  u.0 = 0.5,
+  sigma.det = 100,
+  alpha.u = 0,
+  beta.1.u = 0,
+  beta.2.u = 0,
   c.j0 = matrix(c(seq(min(df.mr$X), max(df.mr$X), length.out = max.c),
            seq(min(df.mr$Y), max(df.mr$Y), length.out = max.c)),
            nrow = max.c),
@@ -35,10 +35,10 @@ init.list <- list(
 
 # parameters to monitor
 params <- c("psi",
-            "alpha.sig",
-            "beta.1.sig",
-            "beta.2.sig",
-            "u.0",
+            "alpha.u",
+            "beta.1.u",
+            "beta.2.u",
+            "sigma.det",
             "loc")
 
 # mcmc settings

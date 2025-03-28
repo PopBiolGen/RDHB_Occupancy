@@ -3,14 +3,14 @@
 model{
   #priors
   psi ~ dunif(0, 1) # probability of a DA colony being real
-  alpha.sig ~ dunif(log(100), log(1000)) # intercept for log sigma
-  beta.1.sig ~ dnorm(0, 1/4) # slope of some linear effect on detection
-  beta.2.sig ~ dnorm(0, 1/4) # slope of some linear effect on detection
-  u.0 ~ dunif(0,1)
+  sigma.det ~ dunif(100, 1000) # detection sigma
+  alpha.u ~ dnorm(0, 1/4) # intercept of log-odds of detection at distance = 0
+  beta.1.u ~ dnorm(0, 1/4) # slope of some linear effect on log odds detection
+  beta.2.u ~ dnorm(0, 1/4) # slope of some linear effect on log odds detection
   
   # foraging kernel
   for (ff in 1:n.fd){
-    fd[ff] ~ dnorm(0, 1/exp(alpha.sig)^2)
+    fd[ff] ~ dnorm(0, 1/exp(sigma.det)^2)
   }
   
   # initialise colony locations
@@ -25,19 +25,17 @@ model{
 
   # Calculate likelihoods given colony dynamics
   for (ii in 1:II){ # step through survey sites and calculate likelihoods
-    # sigma for each survey (attractiveness of site)
-    log(sigma.u[ii]) <- alpha.sig + beta.1.sig*sur.lev.var.1[ii] + beta.2.sig*sur.lev.var.2[ii]
+    # detection at distance = 0 for each survey site
+    logit(u.0[ii]) <- alpha.u + beta.1.u*sur.lev.var.1[ii] + beta.2.u*sur.lev.var.2[ii]
     # density at each site, from all colonies
     for (jj in 1:M){
       # distance from colony to site
       d.ij[ii, jj] <- sqrt((s.0[ii, 1] - c.j0[jj, 1])^2 + (s.0[ii, 2] - c.j0[jj, 2])^2)
-      # expected density from each colony
-      u.ij[ii, jj] <- Z[jj]*u.0*exp(-d.ij[ii, jj]^2/(2*sigma.u[ii]^2)) # real or not, and density with distance
+      # expected detection from each colony
+      u.ij[ii, jj] <- Z[jj]*u.0[ii]*exp(-d.ij[ii, jj]^2/(2*sigma.det^2)) # real or not, and density with distance
     }
     # detection probability from all sources
     det[ii] <- (1 - prod(1-u.ij[ii,])+0.0001)*0.999 # avoiding 1/0 here avoids issues with initialisation of model.
-    # probability of at least one detection at the site
-    #det[ii] <- (1 - exp(-u.i[ii]) + 0.001)*0.999 # # avoiding 1/0 here avoids issues with initialisation of model.
     obs.i[ii] ~ dbern(det[ii])
   }
   # output variables
