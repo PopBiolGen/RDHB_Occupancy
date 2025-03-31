@@ -1,0 +1,52 @@
+# Point process abundance model in JAGS
+model{
+  #priors
+  psi ~ dunif(0, 1) # probability of a DA colony being real
+  alpha.sig ~ dnorm(6.2, 1000) # intercept for log-odds of detection
+  beta.sig ~ dnorm(0, 1/4) # slope of some linear effect on detection
+  sigma.d ~ dunif(100, 2000) # parameter affecting spread of the dispersal kernel
+  l.lambda ~ dnorm(0, 1/4) # intercept for log mean growth rate
+  lambda <- exp(l.lambda)
+
+  
+  # initialise colony locations
+  for (jj in 1:M){ # step through potential colonies at time = 1
+    # place colonies
+    c.j0[1, jj, 1] ~ dunif(x.min, x.max) # place initial colonies into t X Y array
+    c.j0[1, jj, 2] ~ dunif(y.min, y.max)
+    
+    # which of these Z colonies are real?
+    Z[jj, 1] ~ dbern(psi)  # fraction of data augmented colonies
+  }
+
+  # colony dynamics
+  for (tt in 2:nt){ # step through time beyond t = 1
+    for (jj in 1:M){ # for each colony in DA set
+      n[jj, tt] ~ dpois(lambda*Z[jj, tt-1]) # reproduce if real 
+    }
+    n.tot[tt] <- sum(n[,tt])
+    for (jj in 1:M){
+      o.i[jj,tt] ~ dcat(n[, tt]) # generate offspring indices for offspring colonies
+      c.j0[tt, jj, 1] ~ dnorm(c.j0[tt-1, o.i[jj,tt], 1], sigma.d) # place new colonies into t X Y array
+      c.j0[tt, jj, 2] ~ dnorm(c.j0[tt-1, o.i[jj,tt], 2], sigma.d)
+      Z[jj, tt] ~ dbern(n.tot[tt]/M) # which are real in this time step
+    }
+  }
+  # Calculate likelihoods given colony dynamics
+  for (ii in 1:II){ # step through survey sites and calculate likelihoods
+    # sigma for each survey (attractiveness of site)
+    log(sigma.u[ii]) <- alpha.sig + beta.sig*sur.lev.var[ii]
+    # density at each site, from all colonies
+    for (jj in 1:M){
+      # distance from colony to site
+      d.ij[ii, jj] <- sqrt((s.0[ii, 1] - c.j0[t.id[ii], jj, 1])^2 + (s.0[ii, 2] - c.j0[t.id[ii], jj, 2])^2)
+      # expected density from each colony
+      u.ij[ii, jj] <- Z[jj, t.id[ii]]*exp(-d.ij[ii, jj]^2/(2*sigma.u[ii]^2)) # real or not, and density with distance
+    }
+    # sum of expected number
+    u.i[ii] <- u.0*sum(u.ij[ii,]) + 0.001 # avoiding zeros here avoids issues with initialisation of model.
+    # probability of at least one at the site
+    det[ii] <- 1 - exp(-u.i[ii])
+    obs.i[ii] ~ dbern(det[ii])
+  }
+}
