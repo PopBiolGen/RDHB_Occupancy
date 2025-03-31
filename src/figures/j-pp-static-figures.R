@@ -11,10 +11,10 @@ shoreline <- st_read(file.path(Sys.getenv("DATA_PATH"),
 
 ### Non-loc parameters
 temp <- MCMCchains(b, params = c("psi",
-                                 "alpha.sig",
-                                 "beta.1.sig",
-                                 "beta.2.sig",
-                                 "u.0"))
+                                 "alpha.u",
+                                 "beta.1.u",
+                                 "beta.2.u",
+                                 "sigma.det"))
 pdf(file = "out/static-pairs-parameters.pdf")
 pairs(temp)
 dev.off()
@@ -34,8 +34,6 @@ density_df <- data.frame(
 )
 
 # Plot the density with ggplot2
-# set bounding box to extent of data
-bbox <- st_bbox(density_df)
 
 ggplot(density_df, aes(x=x, y=y)) +
   geom_sf(data = shoreline, fill = "lightblue", color = "blue", inherit.aes = FALSE) +
@@ -46,7 +44,8 @@ ggplot(density_df, aes(x=x, y=y)) +
   geom_point(data = df.mr[df.mr$presence==0,], 
              aes(x = X, y = Y), 
              colour = "black",
-             inherit.aes = FALSE) +
+             inherit.aes = FALSE,
+             alpha = 0.1) +
   geom_point(data = df.mr[df.mr$presence==1,], 
              aes(x = X, y = Y), 
              colour = "red",

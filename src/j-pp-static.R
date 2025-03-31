@@ -64,3 +64,5 @@ gelman.diag(b, multivariate = FALSE)
 summary(b)
 
 save(b, file = "out/temp-coda.RData")
+
+source("src/figures/j-pp-static-figures.R")

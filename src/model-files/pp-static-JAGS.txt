@@ -10,7 +10,7 @@ model{
   
   # foraging kernel
   for (ff in 1:n.fd){
-    fd[ff] ~ dnorm(0, 1/exp(sigma.det)^2)
+    fd[ff] ~ dnorm(0, 1/sigma.det^2)
   }
   
   # initialise colony locations
