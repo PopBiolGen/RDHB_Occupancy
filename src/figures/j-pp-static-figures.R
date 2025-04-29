@@ -56,3 +56,52 @@ ggplot(density_df, aes(x=x, y=y)) +
        y = "Y Coordinate",
        fill = "Density")
 ggsave("out/static-density-map.pdf")
+
+# export density raster and contours into a geopackage
+made_date <- today()
+library(terra)
+# Density raster
+# Create an empty raster with the correct dimensions
+r <- rast(
+  nrows = length(unique(density_df$y)), 
+  ncols = length(unique(density_df$x)),
+  xmin = min(density_df$x), xmax = max(density_df$x),
+  ymin = min(density_df$y), ymax = max(density_df$y)
+)
+crs(r) <- "EPSG:32750" # set CRS
+values(r) <- density_df$density # Assign density values to the raster
+# write it out
+writeRaster(r, 
+            filename = paste0("out/density_raster", made_date, ".tif"), 
+            overwrite = TRUE)
+
+# Generate contour lines
+clines <- contourLines(x = unique(density_df$x), 
+                                  y = unique(density_df$y), 
+                                  z = matrix(density_df$density, 
+                                             nrow = length(unique(density_df$y)), 
+                                             byrow = TRUE))
+# Convert the contourLines list to an sf object
+# Convert to sf with labels
+contour_sf <- do.call(rbind, lapply(seq_along(clines), function(i) {
+  cl <- clines[[i]]
+  coords <- cbind(cl$x, cl$y)
+  sf::st_sf(
+    level = cl$level,                         # Contour value for labeling
+    label = paste0("Level: ", cl$level),      # Optional: formatted label string
+    geometry = sf::st_sfc(sf::st_linestring(coords)),
+    crs = 32750  # or your projected CRS
+  )
+}))
+
+# Some metadata
+contour_sf$created_by <- "Ben Phillips"
+contour_sf$created_on <- Sys.Date()
+contour_sf$description <- "Contour lines generated from 2D density surface predicting the locality of hives."
+
+# Path to GDB (will be created if needed)
+gpkg_path <- "out/output_data.gpkg"
+
+# Save as a feature class inside the GDB
+st_write(contour_sf, dsn = gpkg_path, layer = "density_contours", driver = "GPKG", delete_layer = TRUE)
+

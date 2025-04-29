@@ -3,7 +3,7 @@ library(MCMCvis)
 
 ##### Get the data #####
 # Surveillance data
-current.data <- "RDHBSurveillance_2024-10-09.xlsx"
+current.data <- "RDHBSurveillance_2025-03-31.xlsx"
 source("src/b-data-organisation.R")
 # foraging data
 fd <- read_xlsx(path = file.path(data_dir, "Abrol-foraging-data.xlsx")) |> 
@@ -15,7 +15,7 @@ fd <- read_xlsx(path = file.path(data_dir, "Abrol-foraging-data.xlsx")) |>
 
 # most recent (last 6 months) data: ".mr"
 df.mr <- df |> 
-  filter(time.0 >= (max(time.0)-60)) 
+  filter(time.0 >= (max(time.0)-90)) 
 # get coordinates in UTM 50S
 df.utm <- df.mr |>
   st_transform(crs = 32750) |> # UTM 50S

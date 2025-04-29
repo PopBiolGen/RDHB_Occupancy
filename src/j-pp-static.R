@@ -2,7 +2,7 @@
 source("src/j-pp-static-get-data.R")
 
 ##### Organise into data for pp-static model #####
-max.c <- 20
+max.c <- 25
 # data list for JAGS
 data.list <- list(
   fd = fd$distance, # foraging distances
