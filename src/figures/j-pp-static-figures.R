@@ -26,10 +26,11 @@ y <- as.vector(temp[,(ncol(temp)/2+1):ncol(temp)])
 point.data <- data.frame(x = x, y = y) |> subset(x!=0)
 # Estimate 2D kernel density
 density_est <- MASS::kde2d(point.data$x, point.data$y, n = 100, lims = c(min(df.mr$X), max(df.mr$X), min(df.mr$Y), max(df.mr$Y)))  # 100x100 grid
-# Convert to a data frame for ggplot
+
+# Convert to a data frame for ggplot (note the transpose for graphing)
 density_df <- data.frame(
-  x = rep(density_est$x, each = length(density_est$y)),
-  y = rep(density_est$y, times = length(density_est$x)),
+  x = rep(density_est$x, each = length(density_est$x)),
+  y = rep(density_est$y, times = length(density_est$y)),
   density = as.vector(t(density_est$z))
 )
 
@@ -63,16 +64,18 @@ library(terra)
 # Density raster
 # Create an empty raster with the correct dimensions
 r <- rast(
-  nrows = length(unique(density_df$y)), 
-  ncols = length(unique(density_df$x)),
-  xmin = min(density_df$x), xmax = max(density_df$x),
-  ymin = min(density_df$y), ymax = max(density_df$y)
+  nrows = length(density_est$x), 
+  ncols = length(density_est$y),
+  xmin = min(density_est$x), xmax = max(density_est$x),
+  ymin = min(density_est$y), ymax = max(density_est$y)
 )
 crs(r) <- "EPSG:32750" # set CRS
-values(r) <- density_df$density # Assign density values to the raster
+# Assign density values to the raster (note transpose and flip)
+values(r) <- t(density_est$z[,nrow(density_est$z):1]) 
 # write it out
+rast.fname <- paste0("out/density_raster", made_date, ".tif")
 writeRaster(r, 
-            filename = paste0("out/density_raster", made_date, ".tif"), 
+            filename = rast.fname, 
             overwrite = TRUE)
 
 # Generate contour lines
@@ -100,8 +103,13 @@ contour_sf$created_on <- Sys.Date()
 contour_sf$description <- "Contour lines generated from 2D density surface predicting the locality of hives."
 
 # Path to GDB (will be created if needed)
-gpkg_path <- "out/output_data.gpkg"
+gpkg_path <- "out/output_contours.gpkg"
 
 # Save as a feature class inside the GDB
 st_write(contour_sf, dsn = gpkg_path, layer = "density_contours", driver = "GPKG", delete_layer = TRUE)
 
+# List of files to include in the zip
+files_to_zip <- c("out/output_contours.gpkg", rast.fname, "out/static-density-map.pdf")
+
+# Create the zip archive
+zip(zipfile = paste0("out/density_outputs", made_date, ".zip"), files = files_to_zip)
