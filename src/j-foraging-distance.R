@@ -53,4 +53,5 @@ ggplot() +
   ylab("Density of observations") +
   theme_minimal()
 
+ggsave(filename = "out/kernel-fit.png")
 # so t-distribution doesn't give us much change.  Stick with normal.
