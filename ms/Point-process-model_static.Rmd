@@ -1,0 +1,69 @@
+---
+title: "Static point process model"
+author: "Ben Phillips"
+date: "`r format(Sys.Date(), '%d-%m-%Y')`"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## Model description
+
+We look to make inference at a single snapshot of time as to the number of colonies and their most likely location. The model takes elements of a SECR model, but without individual capture histories.  
+
+## Process model
+
+We first initialise a population of colonies as points in space.  We define an area of extent for the population defined by a rectangle described by its lower left $(x_0, y_0)$ and upper right $(x_1, y_1)$ coordinates.  Within this area, colonies are assumed uniformly distributed with locations $\mathbf{C}_0$ (an $n \times 2$ matrix, where $n$ is the number of colonies).
+
+## Observation model
+
+We assume that there are a large number of surveys, $s_i$, each of which has some probability of detecting our species.  For this model to work in the absence of mark-resight data requires a high density of surveys relative to colonies and/or some good prior knowledge about how detection declines with distance from the colony.
+
+The model is motivated by invasive hymenoptera, or wood boring beetles, where it is sensible to think about an invasion of colonies, each containing many individuals.  Under this scenario, there are many individuals from each colony that can potentially be detected, and we can sensibly assume that these individuals are at highest density at the colony, with decreasing density as we move away from the colony.  This declining density equates to a lower detection probability with distance from the colony. Essentially we have a distance sampling model.  First, we need a kernel to describe the way that detection declines with distance from a colony:
+
+$$
+u_{i,j,t} = u_t \times K_u(d_{i,j})
+$$
+
+where $u_t$ is the detection probability that would result if the survey was at the same location as the colony, $K_u()$ is a monotonic decreasing function with $K_u(0) = 1$, describing the way that detection declines with distance. $d_{i,j}$ is the distance between survey site $s_i$ and colony $c_j$.
+
+Across all colonies, then, the probability of detection at survey site, $i$ is:
+
+$$
+u_i = (1 - \prod_j{(1-u_{i,j,t}}))
+$$
+
+
+## Implementation
+
+We fit this model using a Bayesian approach in JAGS. We use a data-augmentation algorithm to implement model fitting.
+
+To do this we define $M$ as the maximum number of potential colonies that can be present.  We then define a vector $\mathbf{Z}$ of length $M$, which contains an indicator variable $z_{j}$ defining whether a "potential" colony is real.
+
+Under data augmentation, whether a colony is real or not is treated as a draw from a Bernoulli distribution:
+
+$$
+z_{j} \sim \text{Bernoulli}(\psi)
+$$
+where $\psi$ is the probability of a colony within $\mathbf{C}_0$ being real.  Under this method, the number of colonies is $n_c = \sum_j{z_j}$.
+
+### Detection kernel
+
+It is a known property of this type of model (Chandler et al. 2018), that the spatial effect (the decay rate of the kernel in this case) will be very poorly estimated without some independent data (mark resight data or similar).  Such data are not available here.  We do, however, have data on the foraging kernel of *Apis florea* from a study in India (Abrol 1988), in which bee counts were made over an hour within 1x1m plots placed at varying distances from a known source hive.  
+
+These data on average counts with distance are well described by a normal distribution.  See figure 1.
+
+```{r kernel.fig, echo = FALSE, fig.cap="Figure 1. Distribution of observed red dwarf honeybee densities at varying distances from the colony.  Shown are fitted normal (solid line) and t-distributions (dashed line). Data from Abrol 1988."}
+knitr::include_graphics(path = "../out/kernel-fit.png")
+```
+
+We assume that this foraging kernel will act as a useful surrogate for the shape and scale of the detection kernel.  We fit these data to a zero-centred normal distribution, and use the resulting scale parameter, $\sigma$ as a hyperprior in the detection kernel function (a standard Gaussian curve):
+
+$$
+K_u(d_{ij}) = e^{\frac{-d_{ij}^2}{2 \sigma^2}}
+$$
+
+
+
