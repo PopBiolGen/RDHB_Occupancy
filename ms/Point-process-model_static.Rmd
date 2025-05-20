@@ -15,7 +15,7 @@ We look to make inference at a single snapshot of time as to the number of colon
 
 ## Process model
 
-We first initialise a population of colonies as points in space.  We define an area of extent for the population defined by a rectangle described by its lower left $(x_0, y_0)$ and upper right $(x_1, y_1)$ coordinates.  Within this area, colonies are assumed uniformly distributed with locations $\mathbf{C}_0$ (an $n \times 2$ matrix, where $n$ is the number of colonies).
+We first initialise a population of colonies as points in space.  We define an area of extent for the population defined by a rectangle described by its lower left $(x_0, y_0)$ and upper right $(x_1, y_1)$ coordinates.  Within this area, colonies are assumed uniformly distributed with locations $\mathbf{C}_0$ (an $M \times 2$ matrix, where $M$ is the maximum number of colonies that can be present within the area of extent).
 
 ## Observation model
 
@@ -35,6 +35,11 @@ $$
 u_i = (1 - \prod_j{(1-u_{i,j,t}}))
 $$
 
+This leads directly to the likelihood of our data.  We assume that the data (observed detections or non-detections at each survey site, $O_{i}$) are a realisation of a Bernoulli process:
+
+$$
+O_i \sim \text{Bernoulli}(u_i).
+$$
 
 ## Implementation
 
@@ -51,7 +56,7 @@ where $\psi$ is the probability of a colony within $\mathbf{C}_0$ being real.  U
 
 ### Detection kernel
 
-It is a known property of this type of model (Chandler et al. 2018), that the spatial effect (the decay rate of the kernel in this case) will be very poorly estimated without some independent data (mark resight data or similar).  Such data are not available here.  We do, however, have data on the foraging kernel of *Apis florea* from a study in India (Abrol 1988), in which bee counts were made over an hour within 1x1m plots placed at varying distances from a known source hive.  
+It is a known property of this type of model (Chandler et al. 2018), that the spatial effect (the decay rate of the kernel in this case) will be very poorly estimated without some independent data (mark resight data or similar).  This isn turn leads to poor estimation of population size, $n$.  Mark-resight data are not available here.  We do, however, have data on the foraging kernel of *Apis florea* from a study in India (Abrol 1988), in which bee counts were made over an hour within 1x1m plots placed at varying distances from a known source hive.  
 
 These data on average counts with distance are well described by a normal distribution.  See figure 1.
 
@@ -59,11 +64,18 @@ These data on average counts with distance are well described by a normal distri
 knitr::include_graphics(path = "../out/kernel-fit.png")
 ```
 
-We assume that this foraging kernel will act as a useful surrogate for the shape and scale of the detection kernel.  We fit these data to a zero-centred normal distribution, and use the resulting scale parameter, $\sigma$ as a hyperprior in the detection kernel function (a standard Gaussian curve):
+In fitting the above model, we assume that this foraging kernel will act as a useful surrogate for the shape and scale of the detection kernel.  We fit these data to a zero-centred normal distribution, and use the resulting scale parameter, $\sigma$ as a hyperprior in the detection kernel function (a standard Gaussian curve):
 
 $$
 K_u(d_{ij}) = e^{\frac{-d_{ij}^2}{2 \sigma^2}}
 $$
 
+### Detection functions
 
+We also bring covariates to bear in our estimation of $u_t$.  Previous occupancy analysis (Phillips unpub.) shows the presence/absence of flowering plants at the survey site, $F_{i,t}$ and the presence/absence of water $W_{i,t}$, to affect detection probability.  Thus, we model base detection probability as a linear model of these two effects, using a logit link:
 
+$$
+\text{logit}(u_i) = \alpha + \beta_1 F_{i} + \beta_2 W_{i}
+$$
+
+Note that while both covariates vary with both time and space, the sampling design we are working with here has very few repeat visits to precisely the same site.  As a consequence, we conflate time with site in this formulation.
