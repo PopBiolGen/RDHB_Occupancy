@@ -98,7 +98,7 @@ dens_plot <- ggplot(density_df, aes(x=x, y=y)) +
 
 
 ggsave(dens_plot, 
-     file = sprintf("out/figs/static-density-map-start_%s.pdf", iter))
+     file = sprintf("out/figs/dens_plots/static-density-map-start_%s.pdf", iter))
 
 # export density raster and contours into a geopackage
 #made_date <- today()
@@ -118,8 +118,7 @@ values(r) <- t(density_est$z[,nrow(density_est$z):1])
 #rast.fname <- paste0("out/density_raster", made_date, ".tif")
 # Save density raster
 writeRaster(r, 
-            filename = paste0("out/figs/density_raster_start_", iter, ".tif"))
+            filename = paste0("out/figs/rasters/density_raster_start_", iter, ".tif"))
 
-
-##### Save as Geopackage ####
-## See Ben's figure script
+# Look at predicted densities at actual colony locations
+ source("src/colonies_compare.R")
