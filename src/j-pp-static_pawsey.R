@@ -84,7 +84,8 @@ b<-coda.samples(a,
 
 # summary(b)
 
-save(b, file = sprintf("out/Rm-ocean_temp-coda-start_%s.RData", iter))
+save(b, 
+     file = sprintf("out/temp-coda-start_%s.RData", iter))
 
 
- source("src/figures/j-pp-static-figures_pawsey.R")
+source("src/figures/j-pp-static-figures_pawsey.R")
