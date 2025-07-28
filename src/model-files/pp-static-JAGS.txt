@@ -2,7 +2,7 @@
 # static model -- for a single time slice of the data
 model{
   #priors
-  psi ~ dunif(0, 1) # probability of a DA colony being real
+  psi ~ dunif(0, 1) # probability of a data augmented colony (i in M) being real
   sigma.det ~ dunif(100, 1000) # detection sigma
   alpha.u ~ dnorm(0, 1/4) # intercept of log-odds of detection at distance = 0
   beta.1.u ~ dnorm(0, 1/4) # slope of some linear effect on log odds detection
@@ -38,6 +38,7 @@ model{
     det[ii] <- (1 - prod(1-u.ij[ii,])+0.0001)*0.999 # avoiding 1/0 here avoids issues with initialisation of model.
     obs.i[ii] ~ dbern(det[ii])
   }
+  
   # output variables
   for (jj in 1:M){
     # inferred locations of colonies
