@@ -3,7 +3,7 @@ library(MCMCvis)
 
 ##### Get the data #####
 # Surveillance data
-current.data <- "RDHBSurveillance_2025-05-02.xlsx"
+current.data <- "RDHBSurveillance_2025-07-21.xlsx"
 source("src/b-data-organisation.R")
 # foraging data
 fd <- read_xlsx(path = file.path(data_dir, "Abrol-foraging-data.xlsx")) |> 
@@ -12,7 +12,7 @@ fd <- read_xlsx(path = file.path(data_dir, "Abrol-foraging-data.xlsx")) |>
 
 
 ##### Filter and get coordinates #####
-up.to.date <- as.Date("2025-04-08") # analyse data in the 90 days up to this date
+up.to.date <- as.Date("2025-07-21") # analyse data in the 90 days up to this date
 # most recent (last 3 months) data: ".mr"
 df.mr <- df |> 
   filter(date.time <= up.to.date & date.time > (up.to.date-90)) 
