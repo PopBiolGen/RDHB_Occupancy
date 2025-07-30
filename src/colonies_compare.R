@@ -1,8 +1,8 @@
 
 #iter <- 
 
-
-library(lubridate)
+#library(terra)
+#library(lubridate)
 
 # Get datasets
 source("src/j-pp-static-get-data_pawsey.R")
@@ -12,17 +12,6 @@ source("src/j-pp-static-get-data_pawsey.R")
 
 cny.df <-  cny.df %>% # Reformat dates
 mutate(date = as.Date(date, format = "%d.%m.%Y"))
-
-# Surveys vs colony detections through time
-#ggplot()+
-#  geom_point(data=df, 
-#             aes(x=date, y=presence))+
-#  geom_point(data=cny.df, 
-#             aes(x=date, y=2),
-#             col="red", size=2)+
-#  scale_x_date(date_breaks = "3 month",
-#               date_minor_breaks = "1 month")+
-#  theme(panel.grid.major = element_line(size = 2))
 
 ### Subset colony data by time window ###
 # Which time frame to use???
@@ -140,6 +129,7 @@ ecdf(df.mr$dens)(cny.mr$dens[1])
 #2nd term is a value you want to compare against distribution (density for 1 colony loc)
 
 cny.mr$qc <- NA
+df.mr$qc <- NA
 
 for(n in 1:nrow(cny.mr)){
   
@@ -147,19 +137,9 @@ for(n in 1:nrow(cny.mr)){
 #  cny.mr$qc[n] <- ecdf(df.pos$dens)(cny.mr$dens[n])
 }
 
-# USE ALL SURVEYS? OR ONLY THOSE WITH POSITIVE DETECTION?
-df.pos <- subset(df.mr, presence==1)
-hist(df.pos$dens)
-
-ggplot()+
-  geom_boxplot(data=df.mr, 
-          aes(y=dens))+
-  geom_boxplot(data=df.pos, 
-               aes(y=dens),
-               col="blue", width=0.5)+
-  geom_boxplot(data=cny.mr, 
-               aes(y=dens),
-               col="red", width=0.25)
+#ggplot(data=df.mr)+
+#  geom_histogram(aes(x=dens))+
+#  geom_vline(xintercept = c(cny.mr$dens), col="red")
 
 
 # What to save ??
@@ -167,8 +147,8 @@ ggplot()+
 cny.mr$data <- 'colonies'
 df.mr$data <- 'surveys'
 
-df.all <- rbind(cny.mr[,c('X','Y','dens','data')], # Include qc??
-                df.mr[,c('X','Y','dens','data')])
+df.all <- rbind(cny.mr[,c('X','Y','dens','qc','data')], # Include qc??
+                df.mr[,c('X','Y','dens','qc','data')])
 
 write.csv(df.all,
           file = sprintf("out/dens-colonies-vs-surveys-iter_%s.csv", iter))
@@ -235,7 +215,7 @@ r.cny_sums[i] <- sum(r.cny[,'dens']) # Sum densities at put in ith row
 }
 
 # Look at distribution of summed densities
-hist(r.cny_sums)
+#hist(r.cny_sums)
 
 # Calculate mean and SD of these summed densities over 100 iterations
 cny_summary[2,] <- c(mean(r.cny_sums), # Average summed density of random points (over all iterations)
