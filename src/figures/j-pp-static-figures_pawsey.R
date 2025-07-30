@@ -121,4 +121,4 @@ writeRaster(r,
             filename = paste0("out/figs/rasters/density_raster_start_", iter, ".tif"))
 
 # Look at predicted densities at actual colony locations
- source("src/colonies_compare.R")
+# source("src/colonies_compare.R")
