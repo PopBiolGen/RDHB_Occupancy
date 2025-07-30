@@ -16,7 +16,8 @@ library(readr)
 
 ##### Get the data #####
 # Surveillance data
-current.data <- "RDHBSurveillance_2025-05-02.xlsx"
+#current.data <- "RDHBSurveillance_2025-05-02.xlsx"
+current.data <- "RDHBSurveillance_2025-07-21.xlsx"
 source("src/b-data-organisation.R")
 # foraging data
 fd <- read_xlsx(path = file.path(data_dir, "Abrol-foraging-data.xlsx")) |> 
@@ -30,6 +31,8 @@ m.shore <- as.matrix(read.csv('src/figures/matrix.shoreline.csv',
                               check.names = F)) # Make sure disable otherwise puts X in front of colnames
 
 ##### Filter and get coordinates #####
+
+# 27 months (iters) to test up to 21-07-2025 data
 
 first.date <- as.Date(min(df$date.time)) # Earliest survey date
 
