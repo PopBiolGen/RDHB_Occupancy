@@ -50,4 +50,13 @@ df.utm <- df.mr |>
 # cbind to filtered dataframe
 df.mr <- cbind(df.mr, df.utm) |> 
   st_drop_geometry()
-rm(df.utm)
+
+# Get coords for complete dataset (to set bounding box)
+df.coord <- df |>
+  st_transform(crs = 32750) |> # UTM 50S
+  st_coordinates()
+# cbind to filtered dataframe
+df <- cbind(df, df.coord) |> 
+  st_drop_geometry()
+
+rm(df.utm, df.coord)
