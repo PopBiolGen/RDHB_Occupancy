@@ -21,10 +21,10 @@ data.list <- list(
   sur.lev.var.1 = df.mr$flowering, # detection covariate 1
   sur.lev.var.2 = df.mr$water, # detection covariate 2
   obs.i = df.mr$presence, # presence/absence observations
-  x.min = round(min(df.mr$X)),
-  y.min = round(min(df.mr$Y)), # possible spatial extent of the species across all time, bounding box
-  x.max = round(max(df.mr$X)),
-  y.max = round(max(df.mr$Y)), # in metres
+  x.min = round(min(df$X)),
+  y.min = round(min(df$Y)), # possible spatial extent of the species across all time, bounding box
+  x.max = round(max(df$X)),
+  y.max = round(max(df$Y)), # in metres
   II = nrow(df.mr), # total number of surveys
   M = max.c, # maximum number of colonies (data-augmentation approach)
 
