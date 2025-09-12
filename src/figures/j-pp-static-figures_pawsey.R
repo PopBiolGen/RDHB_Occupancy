@@ -26,10 +26,11 @@ load(file = paste("out/temp-coda-start_",
 # grab a shoreline
 # Slightly different directory -- make consistent!
 # Already crs transformed
-shoreline <- st_read(file.path(Sys.getenv("DATA_PATH"), 
-                               "RDHB/Spatial/Australia_boundary.shp")) |>
+#shoreline <- st_read(file.path(Sys.getenv("DATA_PATH"), 
+#                               "RDHB/Spatial/Australia_boundary.shp")) |>
+#  st_transform(crs = 32750)
+shoreline <- st_read("src/Australia_boundary.shp") |>
   st_transform(crs = 32750)
-
 
 ### Non-loc parameters
 #temp <- MCMCchains(b, params = c("psi",
@@ -76,7 +77,12 @@ density_df <- data.frame(
 
 dens_plot <- ggplot(density_df, aes(x=x, y=y)) +
   geom_sf(data = shoreline, fill = "lightblue", color = "blue", inherit.aes = FALSE) + # Draw coastline
-  coord_sf(xlim = range(density_df$x), ylim = range(density_df$y)) +  # Apply bounding box
+  
+ # coord_sf(xlim = range(density_df$x), ylim = range(density_df$y)) +  # Apply bounding box
+  
+  coord_sf(xlim = range(df$X), ylim = range(df$Y)) +  # Apply bounding box
+  
+  
   geom_raster(aes(fill = density), # use geom_raster when every cell has data (otherwise use geom_tile)
               interpolate = TRUE) + # interpolate smooths between cells
   geom_contour(aes(z = density), color = "black", alpha = 0.5) +
@@ -91,7 +97,8 @@ dens_plot <- ggplot(density_df, aes(x=x, y=y)) +
              colour = "red",
              inherit.aes = FALSE) +
   theme_minimal() +
-  labs(title = "2D Kernel Density Estimation",
+  labs(title = paste("2D Kernel Density Estimation: ", 
+                     paste(start.date, up.to.date, sep=" to ")),
        x = "X Coordinate",
        y = "Y Coordinate",
        fill = "Density")
