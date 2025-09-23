@@ -40,17 +40,6 @@ start.date <- first.date + ((iter - 1)*30) # From this date (start every 30 days
 up.to.date <- start.date + 90 # To this date (run for 90 days)
 #up.to.date <- as.Date("2025-04-08") # analyse data in the 90 days up to this date
 
-# most recent (last 3 months) data: ".mr"
-df.mr <- df |> 
-  filter(date.time <= up.to.date & date.time > start.date) 
-# get coordinates in UTM 50S
-df.utm <- df.mr |>
-  st_transform(crs = 32750) |> # UTM 50S
-  st_coordinates()
-# cbind to filtered dataframe
-df.mr <- cbind(df.mr, df.utm) |> 
-  st_drop_geometry()
-
 # Get coords for complete dataset (to set bounding box)
 df.coord <- df |>
   st_transform(crs = 32750) |> # UTM 50S
@@ -59,4 +48,15 @@ df.coord <- df |>
 df <- cbind(df, df.coord) |> 
   st_drop_geometry()
 
-rm(df.utm, df.coord)
+# most recent (last 3 months) data: ".mr"
+df.mr <- df |> 
+  filter(date.time <= up.to.date & date.time > start.date) 
+# get coordinates in UTM 50S
+#df.utm <- df.mr |>
+#  st_transform(crs = 32750) |> # UTM 50S
+#  st_coordinates()
+# cbind to filtered dataframe
+#df.mr <- cbind(df.mr, df.utm) |> 
+#  st_drop_geometry()
+rm(df.coord)
+#rm(df.utm, df.coord)
