@@ -61,7 +61,8 @@ point.data <- data.frame(x = x, y = y) |> subset(x!=0) # Grid of all locations..
 # Need to ignore all oceans points when running model...
 
 # Estimate 2D kernel density
-density_est <- MASS::kde2d(point.data$x, point.data$y, n = 100, lims = c(min(df.mr$X), max(df.mr$X), min(df.mr$Y), max(df.mr$Y)))  # 100x100 grid
+density_est <- MASS::kde2d(point.data$x, point.data$y, n = 100, 
+                          lims = c(min(df$X), max(df$X), min(df$Y), max(df$Y))) # Estimate density over whole area
 
 # ^ What is this doing?? Smoothing a kernel over all those points to give a general density of points? 
 
