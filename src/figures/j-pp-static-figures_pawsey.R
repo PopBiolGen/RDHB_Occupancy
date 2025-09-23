@@ -8,11 +8,13 @@
 #                 dependencies = TRUE)
 #library(MCMCvis)
 
-library(rjags)
-library(dplyr)
-
+rm(list=ls()) # Clear workspace
+args <- commandArgs(trailingOnly = TRUE) # Create command line for interacting with job_submission.slurm script
+iter <- as.numeric(args[1]) # iter corresponds to array number (iteration) of job
 
 ##### make some plots #####
+library(rjags)
+library(dplyr)
 library(ggplot2)
 source("src/a-setup.R")
 
