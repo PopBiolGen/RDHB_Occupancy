@@ -1,16 +1,16 @@
 
 #### Comparing model predictions (estimated colony density) with READ DATA (actual colony locations)
 
-#iter <- 
-
-#### Get data ####
+rm(list=ls()) # Clear workspace
+args <- commandArgs(trailingOnly = TRUE) # Create command line for interacting with job_submission.slurm script
+iter <- as.numeric(args[1]) # iter corresponds to array number (iteration) of job
 
 library(terra)
 #library(lubridate)
 
-# Get datasets
-source("src/j-pp-static-get-data_pawsey.R")
+#### Get data ####
 
+source("src/j-pp-static-get-data_pawsey.R")
 # df.mr = survey data (for 3 month time window)
 # cny.df = separate df of detected colonies 
 
@@ -18,10 +18,9 @@ cny.df <-  cny.df %>% # Reformat dates
 mutate(date = as.Date(date, format = "%d.%m.%Y"))
 
 ### Subset colony data by time window ###
-# Which time frame to use???
 cny.mr <- cny.df |> 
   filter(date >= # Can play around with time-frame here...
-         up.to.date & # Only look at colonies found 1 month AFTER survey window
+         up.to.date & # Only look at colonies found in 1 month AFTER survey window
         # up.to.date - 30 &  # Include last month of survey window?
          #  up.to.date - 60 &  # Include last 2 months of survey window?
            date < up.to.date + 30) 
@@ -34,26 +33,25 @@ cny.mr <- cbind(cny.mr, cny.utm) |>
 # remove duplicated colonies
 cny.mr <- cny.mr[!duplicated(cny.mr[, c("X","Y")]),]
   
-### Repeat this from figure script ###
+#### Calculate predicted colony density from posteriors (repeat this from figures script) ####
+
 # Load predictions for matching iter
 load(file = paste("out/temp-coda-start_", 
                   iter, 
                   ".RData", sep="")) 
-# load shoreline
-shoreline <- st_read(file.path(Sys.getenv("DATA_PATH"), 
-                               "RDHB/Spatial/Australia_boundary.shp")) |>
+# load shoreline shapefile
+shoreline <- st_read("src/Australia_boundary.shp") |>
   st_transform(crs = 32750)
 
-temp <- as.data.frame(as.matrix(b)) # as.matrix produces the same as above, just prints other parameters as well (alpha, beta.1, beta.2, psi, sigma.det)
-temp <- temp %>% # Clunky, but go to df and back to use dplyr to select only loc columns
+temp <- as.data.frame(as.matrix(b)) # turn posteriors output into matrix
+temp <- temp %>% # Clunky, but go to df and back to matrix (to use dplyr to select only loc columns)
   select(contains("loc", ignore.case = F))
 temp <- as.matrix(temp)
 
 x <- as.vector(temp[,1:(ncol(temp)/2)]) # First half of columns are long values
 y <- as.vector(temp[,(ncol(temp)/2+1):ncol(temp)]) # Second half are lat values 
-point.data <- data.frame(x = x, y = y) |> subset(x!=0) # Grid of all locations... 
+point.data <- data.frame(x = x, y = y) |> subset(x!=0) # Grid of all predicted colony locations... 
 
-# Using full df bounding box
 density_est <- MASS::kde2d(point.data$x, point.data$y, n = 100, 
                            lims = c(min(df$X), max(df$X), min(df$Y), max(df$Y)))  # 100x100 grid
 
@@ -65,12 +63,11 @@ density_df <- data.frame(
 
 
 # Load raster
-
 r <- rast(paste("out/figs/rasters/density_raster_start_", 
                 iter, 
                 ".tif", sep=""))
 
-#### Plot colonies against predictions ####
+#### Plot actual colonies against predicted density ####
 
 # Plot colonies against prediction map
 colony_plot <- ggplot(density_df, aes(x=x, y=y)) +
@@ -89,18 +86,18 @@ colony_plot <- ggplot(density_df, aes(x=x, y=y)) +
              colour = "red",
              inherit.aes = FALSE) +
   theme_minimal() +
-  labs(title = "2D Kernel Density Estimation",
-       x = "X Coordinate",
-       y = "Y Coordinate",
+  labs(title = paste("Density Estimation vs. Observed Colonies: ", 
+                     paste(start.date, up.to.date, sep=" to ")),
+       x = "",
+       y = "",
        fill = "Density")
 
 ggsave(colony_plot, 
        file = sprintf("out/figs/colonies/colonies-vs-density-map-iter_%s.pdf", iter))
 
-# Extract density values from raster for colony locations
+#### Extract density values from raster for colony & survey locations ####
 
 m.point <- matrix(c(cny.mr$X, cny.mr$Y), ncol=2)
-# Extracting values from raster?
 cny.dens <- as.matrix(extract(x = r, 
                       y = m.point),
                       ncol=1)
@@ -108,62 +105,49 @@ cny.mr <- cbind(cny.mr, cny.dens)
 colnames(cny.mr)[ncol(cny.mr)] <- 'dens'
 cny.mr <- cny.mr[,c('X','Y','dens')]
 
-# Save density per colony
-#write.csv(cny.mr,
-#          file = sprintf("out/colonies/colonies-dens-iter_%s.csv", iter))
-
-
-#### SUMMARISE DENSITIES, COMPARE WITH SURVEYS, RANDOM ####
-
-# ALSO calculate density for each survey (in df.mr)
-# * plot hist of all survey loc densities, and compare against density for each colony
-# GET QUANTILE SCORE (q_c) OF EACH COLONY AGAINST ALL SURVEY DENSITIES
-# EXAMINE DISTRIBUTION OF q_c
-
+# Densities for survey locations
 m.point.df <- matrix(c(df.mr$X, df.mr$Y), ncol=2)
-# Extracting values from raster?
 df.dens <- as.matrix(extract(x = r, 
                               y = m.point.df),
                       ncol=1)
 df.mr <- cbind(df.mr, df.dens)
 colnames(df.mr)[ncol(df.mr)] <- 'dens'
 
-# Maybe this?
-ecdf(df.mr$dens)(cny.mr$dens[1])
-# ecdf = Empirical Cumulative Distribution Function
-# 1st term is vector of values (densities across surveys)
-#2nd term is a value you want to compare against distribution (density for 1 colony loc)
+#### GET QUANTILE SCORE (q_c) OF EACH COLONY DENSITY AGAINST ALL SURVEY SITE DENSITIES ####
 
 cny.mr$qc <- NA
 df.mr$qc <- NA
 
 for(n in 1:nrow(cny.mr)){
   
-  cny.mr$qc[n] <- ecdf(df.mr$dens)(cny.mr$dens[n])
-#  cny.mr$qc[n] <- ecdf(df.pos$dens)(cny.mr$dens[n])
+  cny.mr$qc[n] <- ecdf(df.mr$dens)(cny.mr$dens[n]) # ecdf = Empirical Cumulative Distribution Function
+            # 1st term is vector of values (densities across surveys)
+            #2nd term is a value you want to compare against distribution (density for 1 colony loc)
+  
+  
 }
 
 #ggplot(data=df.mr)+
 #  geom_histogram(aes(x=dens))+
 #  geom_vline(xintercept = c(cny.mr$dens), col="red")
 
-
-# What to save ??
-
 cny.mr$data <- 'colonies'
 df.mr$data <- 'surveys'
 
 df.all <- rbind(cny.mr[,c('X','Y','dens','qc','data')], # Include qc??
                 df.mr[,c('X','Y','dens','qc','data')])
+df.all$iter <- iter
+
+#### Save data frame: ####
+# Density value for each colony and survey site
+# q_c value for each colony (against distribution of survey densities)
 
 write.csv(df.all,
           file = sprintf("out/dens-colonies-vs-surveys-iter_%s.csv", iter))
 
-#### Compare against random locations ####
+#### Compare sum of colony densities against distribution of the sums of randomly selected locations ####
 
-# SUM DENSITIES ACROSS COLONIES
-# Create summary matrix to fill
-cny_summary <- matrix(NA, 
+cny_summary <- matrix(NA, # Create summary matrix to fill
                       ncol=3, nrow=2)
 cny_summary[1,1] <- sum(cny.mr$dens) # Sum of densities of colony locs
 colnames(cny_summary) <- c('mean_sum', # Sum of densities (average sum across iterations for random points)
@@ -171,10 +155,9 @@ colnames(cny_summary) <- c('mean_sum', # Sum of densities (average sum across it
                            'qc') # quantile score for summed colonies vs. distribution of 100 random sums
 rownames(cny_summary) <- c(paste('iter_',iter, sep=""), 
                            paste('random_',iter, sep=""))
-
 # Compare against same number of RANDOMLY dropped locations
-
 n.cny <- nrow(cny.mr) # number actual colonies
+# SHOULD DROP RANDOM POINTS IN SAME BOUNDING BOX AS SURVEYS??
 x.min <- round(min(df.mr$X)) # min & max coords
 y.min <- round(min(df.mr$Y)) 
 x.max <- round(max(df.mr$X))
@@ -221,24 +204,24 @@ r.cny_sums[i] <- sum(r.cny[,'dens']) # Sum densities at put in ith row
 
 }
 
-# Look at distribution of summed densities
-#hist(r.cny_sums)
-
 # Calculate mean and SD of these summed densities over 100 iterations
 cny_summary[2,] <- c(mean(r.cny_sums), # Average summed density of random points (over all iterations)
                      sd(r.cny_sums), NA) # SD of this distribution
+#ggplot()+
+#  geom_histogram(aes(x=r.cny_sums))+
+#  geom_vline(xintercept = c(cny.mr$dens), col="red")
 
-# What is quantile for summed densities of colony locs (compared to random loc?)
+# What is quantile for summed densities of colony locs (compared to distribution of summed random loc?)
 cny_summary[1,3] <- ecdf(r.cny_sums)(cny_summary[1,1])
+
+cny_summary$iter <- iter
 
 
 write.csv(cny_summary,
           file = sprintf("out/colonies/colonies-vs-random-sums-iter_%s.csv", 
                          iter))
 
-
-### ALT - plot area under cumulative distribution'
-
+#####################################################################
 
 #### POSTERIOR PREDICTIVE CHECKS ####
 
