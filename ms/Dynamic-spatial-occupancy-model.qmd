@@ -1,0 +1,145 @@
+---
+title: "Dynamic spatial occupancy model"
+author: "Ben Phillips"
+date: "2026-08-05"
+format: html
+---
+
+## Model description
+
+This document describes the model implemented in `src/h-dynamic-spatial-occupancy_JAGS.R` and `src/h-dynamic-spatial-occupancy_Nimble.R` (data preparation in `src/h-1-dynamic-spatial-occupancy_data-organisation.R`; underlying process functions defined and unit-tested against simulated data in `src/g-1-dynamic-spatial-occupancy_functions.R` through `src/g-4-dynamic-spatial-occupancy-simtest_JAGS.R`). Elsewhere in the repo (e.g. `ms/RDHB_report.Rmd`) this is referred to informally as the "dynamic occupancy" model.
+
+Unlike the grid-based occupancy models in `src/c`–`src/f`, which treat each grid cell's occupancy dynamics as independent (or spatially correlated only through a fitted spatial random effect), this model makes colonisation of a cell an explicit function of occupancy in *nearby* cells, and extinction an explicit function of local control (hive/colony removal) effort. The intent is to let control effort feed directly into the occupancy process, so that the fitted model can be used to ask "what happens to the invasion if we change how much/where we remove hives?" This is the aspect of the model that motivated its development, and per the project README it "kind of works, but needs more development" — it should be treated as exploratory rather than a finished analysis.
+
+## Data structure
+
+- **Sites** ($j = 1, \dots, J$): grid cells produced by `aggregate_data()` (`src/a-setup.R`), a regular spatial grid intersected with point survey locations.
+- **Primary periods** ($t = 0, \dots, T$): approximately month-long time steps (`time.step`, from `temporal_aggregation()`), i.e. the timescale over which colonisation/extinction is assumed to act. $t=0$ denotes the (unobserved) state immediately prior to the first primary period's surveys.
+- **Replicate surveys** ($k = 1, \dots, K$): individual surveys within a site/primary-period combination. The number of replicates varies by site and period, so the observation array is ragged — it is padded with `NA` up to the maximum $K$ seen anywhere in the data, and the padding is excluded from the likelihood (see [Implementation]).
+
+Covariates used by the model, all constructed in `src/h-1-dynamic-spatial-occupancy_data-organisation.R`:
+
+| Symbol (code) | Meaning | Level |
+|---|---|---|
+| $D_{j,i}$ (`dist.mat`) | Pairwise distance between grid-cell centroids $j$ and $i$, computed after projecting to Australian Albers (EPSG:3577), i.e. metres | site $\times$ site |
+| $d_{j,0}$ (`init.dist`) | Mean distance (km) of records in cell $j$ from the location of the first-ever detected presence in the dataset (`dist.0`, from `src/b-data-organisation.R`) | site |
+| $E_{j,t}$ (`ext.x1` / `hive.removed`) | Count of hives/colonies removed in cell $j$ during period $t$ — the control-effort covariate | site $\times$ period |
+| $\sin(\text{doy})$, $\cos(\text{doy})$ (`det.x1`, `det.x2`) | Sine/cosine of day-of-year in radians, giving a smooth annual detectability cycle | observation |
+| `water` (`det.x3`) | Whether a known water source was noted at the survey | observation |
+| `flowering` (`det.x4`) | Whether the host plant was flowering at the time of survey | observation |
+
+Site-level covariates on colonisation beyond the spatial term below (`col.var` in the data-prep code) are scaffolded but not currently populated — this is a natural extension point.
+
+## Process model
+
+The latent state $z_{j,t} \in \{0, 1\}$ is whether grid cell $j$ is occupied during primary period $t$.
+
+### Initial state
+
+$$
+\text{logit}(\rho_j) = \rho_{\text{int}} + \rho_b \, d_{j,0}
+$$
+$$
+z_{j,0} \sim \text{Bernoulli}(\rho_j)
+$$
+
+Initial occupancy probability is allowed to decay with distance from the first detected presence in the whole dataset. (The Nimble implementation currently drops the $\rho_b d_{j,0}$ term and uses a single shared $\rho_{\text{int}}$ for all cells — see [Implementation].)
+
+### Colonisation and extinction dynamics
+
+Colonisation of a cell depends on a distance-weighted count of currently-occupied neighbouring cells (including itself, since $D_{j,j}=0$):
+
+$$
+S_{j,t} = \sum_{i=1}^{J} e^{-k D_{j,i}} \, z_{i,t-1}
+$$
+
+where $k$ is the rate of spatial decay of colonisation potential with distance — smaller $k$ means occupied cells exert influence over longer distances. $S_{j,t}$ then drives the probability of colonisation:
+
+$$
+\text{logit}(p^{\text{col}}_{j,t}) = \text{col}_{\text{int}} + \text{col}_b \, S_{j,t}
+$$
+
+$\text{col}_{\text{int}}$ represents a constant background rate of colonisation (e.g. rare long-distance dispersal, or colonisation from outside the surveyed area), and $\text{col}_b$ scales the spatial (nearby-occupied-cells) effect.
+
+Extinction probability depends on local control effort in the *previous* period:
+
+$$
+\text{logit}(p^{\text{ext}}_{j,t}) = \text{ext}_{\text{int}} + \text{ext}_b \, E_{j,t-1}
+$$
+
+$\text{ext}_{\text{int}}$ is a background (per-period) extinction probability that would apply even with no control effort; $\text{ext}_b$ is constrained to be non-negative in both implementations, reflecting the assumption that removing hives cannot reduce the chance of local extinction.
+
+The two are combined into a single transition probability, and the state updated as a Markov chain:
+
+$$
+\Pr(z_{j,t}=1) = (1-z_{j,t-1})\, p^{\text{col}}_{j,t} + z_{j,t-1} \,(1-p^{\text{ext}}_{j,t})
+$$
+$$
+z_{j,t} \sim \text{Bernoulli}\big(\Pr(z_{j,t}=1)\big)
+$$
+
+i.e. an unoccupied cell becomes occupied with probability $p^{\text{col}}_{j,t}$; an occupied cell remains occupied with probability $1-p^{\text{ext}}_{j,t}$.
+
+A derived quantity, total occupied cells per period, is monitored in both fits:
+
+$$
+O_t = \sum_{j=1}^{J} z_{j,t}
+$$
+
+## Observation model
+
+Detection probability for replicate survey $k$ at site $j$, period $t$ depends on season and local conditions at the time of that specific survey:
+
+$$
+\text{logit}(p^{\text{obs}}_{j,t,k}) = \text{det}_{\text{int}} + \text{det}_{b1}\sin(\text{doy}_{j,t,k}) + \text{det}_{b2}\cos(\text{doy}_{j,t,k}) + \text{det}_{b3}\,\text{water}_{j,t,k} + \text{det}_{b4}\,\text{flowering}_{j,t,k}
+$$
+
+Observations are then Bernoulli draws conditional on the site being occupied during that period:
+
+$$
+o_{j,t,k} \sim \text{Bernoulli}\big(p^{\text{obs}}_{j,t,k} \; z_{j,t}\big)
+$$
+
+## Priors
+
+As specified in `src/model-files/invasion-occ_RDHB_JAGS.txt` (the model fit by the JAGS script):
+
+| Parameter | Prior |
+|---|---|
+| $\rho_{\text{int}}$, $\rho_b$ | $\text{Normal}(0, \text{sd}=2)$ |
+| $\text{col}_{\text{int}}$ | $\text{Normal}(-5, \text{sd}=2)$ |
+| $\text{col}_b$ | $\text{Normal}(0, \text{sd}=6)$ |
+| $\text{ext}_{\text{int}}$ | $\text{Normal}(-5, \text{sd}=3)$ |
+| $\text{ext}_b$ | $\text{Normal}(0, \text{sd}=2)$ |
+| $\text{det}_{\text{int}}, \text{det}_{b1..b4}$ | $\text{Normal}(0, \text{sd}=2)$ |
+| $k$ | $\text{Uniform}(0.1, 1)$ |
+
+The Nimble implementation uses the same broad structure but reparametrises/constrains a few terms for identifiability and mixing — see below.
+
+## Implementation
+
+Two MCMC backends fit the same generative model above, with minor differences:
+
+**JAGS** (`src/h-dynamic-spatial-occupancy_JAGS.R`, model text `src/model-files/invasion-occ_RDHB_JAGS.txt`, via `rjags`)
+
+- Retains the $\rho_b d_{j,0}$ term in the initial-occupancy submodel.
+- $\text{col}_b$ and $\text{ext}_b$ have unconstrained Normal priors.
+- $k$ is sampled directly as $\text{Uniform}(0.1, 1)$.
+- The observation array `y` is passed to JAGS as the full ragged $J \times T \times K$ array (`NA`-padded where a site/period had fewer than $K$ replicate surveys). Padding is excluded from the likelihood via a `step()` trick: `y.real` (1 = real observation, 0 = padding) is passed in as `y.real - 1`, and the Bernoulli probability for each cell is multiplied by `step(y.real[j,t,k] - 1)`, which evaluates to 0 for padded entries — collapsing their (otherwise-imputed) likelihood contribution to a fixed zero.
+- 3 chains, 5000-iteration burn-in, 10000 further iterations thinned by 5, via `coda.samples()`. Output saved to `out/dynamic-spatial-occupancy_RDHB_Coda.RData`.
+
+**Nimble** (`src/h-dynamic-spatial-occupancy_Nimble.R`, model defined inline via `nimbleCode()`)
+
+- Drops the $\rho_b d_{j,0}$ term; all cells share a single initial-occupancy probability $\rho_{\text{int}}$.
+- $\text{col}_b \sim \text{Uniform}(0, 6)$ and $\text{ext}_b \sim \text{Uniform}(0, 2)$ are constrained to be non-negative directly through the prior, rather than left unconstrained.
+- $k$ is reparametrised as $k = 1/m$ with $m \sim \text{Uniform}(1, 10)$ for improved MCMC mixing (same effective range as the JAGS prior).
+- Rather than looping over a `NA`-padded array, `obs_level_to_df()` flattens the observation data to one row per *real* survey (with explicit `site`/`time` index columns), so there is no padding to mask out.
+- 3 chains, 20000-iteration burn-in, 22000 total iterations, via `nimbleMCMC()`. Output saved to `out/dynamic-spatial-occupancy_RDHB_Nimble_Coda.RData`.
+
+Both scripts check convergence with `coda::gelman.diag()` and monitor the same set of parameters (`rho.int`, `det.int`/`det.b1-4`, `col.int`/`col.b`, `ext.int`/`ext.b`, `k`, and derived occupancy-through-time `o.t`).
+
+### Development caveats
+
+`src/h-1-dynamic-spatial-occupancy_data-organisation.R` currently truncates the data during development: `max.tt` caps the number of primary periods used (20) and `max.obs.jj.tt` caps the number of replicate surveys retained per site/period (60). These are noted in the script as "to be removed for full fit" and should be revisited before treating model output as final.
+
+The underlying colonisation/extinction/detection process (independent of real data or MCMC backend) is defined in `src/g-1-dynamic-spatial-occupancy_functions.R` (`decay()`, `mean.occ()`, `update.occ.prob()`, `dyn.occ()`, `det.prob()`) and is exercised against simulated data in `src/g-2-simulate-dynamic-occupancy.R` through `src/g-4-dynamic-spatial-occupancy-simtest_JAGS.R`, in both `greta` and JAGS, before being pointed at real survey data in the `h-*` scripts described here.
